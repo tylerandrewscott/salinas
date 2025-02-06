@@ -47,3 +47,19 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+#symbolic link
+/text_as_datatable
+
+#api keys
+salinas_openai_key.txt
+EliseKeyTwo.txt
+
+#Elise's test scripts
+initial_tests/
+
+#temp output files
+openai_output_files/
+
+#DS store files
+*.DS_Store
