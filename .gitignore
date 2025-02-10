@@ -50,6 +50,7 @@ rsconnect/
 
 #symbolic link
 /text_as_datatable
+/salinasbox
 
 #api keys
 salinas_openai_key.txt
