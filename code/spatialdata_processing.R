@@ -27,3 +27,17 @@ gis_list_transformed <- lapply(gis_list, function(x) {
       x
     }
   })
+
+library(dplyr)
+#turn wind turbine points into polygons
+ex <- wind_projs[1:80,]
+ex2 <- ex %>%
+  group_by(p_name, p_year) %>% # get turbines from same year at same project
+  summarise(geometry = st_union(geometry)) %>% # merge into multipoint 
+  ungroup() %>% 
+  mutate(geometry = st_convex_hull(geometry)) 
+# decide what to do with single points or lines that result if no poly is made. add buffers to those?
+
+
+         
+        
