@@ -14,7 +14,7 @@ recorddeets[str_detect(recorddeets$Title, "Solar(?=\\sSystem|\\sTelescope)"),]$T
 solarwinddeets <- recorddeets[str_detect(recorddeets$Title,
                                          "(S|s)olar(?!\\sSystem|\\sTelescope)|(W|w)ind\\s(?!(R|r)iver|(C|c)ave|(D|d)amage|(T|t)unnel)|(W|w)ind$"),]
 
-saveRDS(solarwinddeets, "solarwind_project_details.RDS")
+saveRDS(solarwinddeets, "salinasbox/solarwind_project_details.RDS")
 energydeets <- recorddeets[str_detect(recorddeets$Title,
                                       "Energy") & !str_detect(recorddeets$Title,
                                                               "Wind|Solar"),]
@@ -26,7 +26,7 @@ solarwindpublic <- solarwinddeets[solarwinddeets$Agency %in%
                                       "National Park Service",
                                       "Fish and Wildlife Service"),]
 
-solarwinddeets <- readRDS("solarwind_project_details.RDS")
+solarwinddeets <- readRDS("salinasbox/solarwind_project_details.RDS")
 writeLines(as.character(solarwinddeets$EIS.Number), "solarwind_EISnumbers.txt")
 #energy project
 #energy development
