@@ -16,7 +16,7 @@ eis_pdfs <- c(eis_pdfs, "20140004_Fowler_Ridge")
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
 projects_done <- projects[projects$EIS.Number %in% eis_pdfs_nums,]
-# where are these EIS docs??? -- pre-2012, except for Rail Tie ???
+# ones that didn't make it (pre-2012, except for rail tie? look into)
 not_in <- projects[!projects$EIS.Number %in% eis_pdfs_nums,]
 # csv for EIS docs with appendices removed 
 write.csv(projects_done,"salinasbox/intermediate_data/project_databases/EISlist.csv", row.names = F)
