@@ -1,3 +1,7 @@
+#Purpose: This script is a process check to make sure the page count
+#for the clean files looks good. 
+
+#Setup: None
 
 packages <- c("pdftools", "data.table", "stringr")
 
@@ -30,13 +34,13 @@ raw_num_empties <- sapply(raw_text_files, function(file) {
 })
 names(raw_row_counts) <- basename(raw_text_files)
 
-clean_text_files <- list.files(clean_text_directory, pattern = "\\.txt$", full.names = TRUE)
+clean_text_files <- list.files(clean_text_directory, pattern = "\\.RDS$", full.names = TRUE)
 clean_row_counts <- sapply(clean_text_files, function(file) {
-  dt <- fread(file)
+  dt <- readRDS(file)
   nrow(dt)
 })
 clean_num_empties <- sapply(clean_text_files, function(file) {
-  dt <- fread(file)
+  dt <- readRDS(file)
   dt$text <- case_when(is.na(dt$text) ~ "",
             T ~ dt$text)
   sum(str_equal(dt$text, ""))
@@ -61,4 +65,4 @@ result_df <- data.frame(
 )
 
 saveRDS(result_df, "salinasbox/clean_data/page_count_comparison.RDS")
-print(result_df)
+View(result_df)
