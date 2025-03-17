@@ -6,7 +6,10 @@
 #Headers and footers are also removed here
 
 #Set-up: Decide whether clobber (overwrite files) = T or F.
+#Also, there are a few quality tests to verify header/footer removal functionality
+#To run these, set runtests = T and visually inspect the output
 CLOBBER <- T
+runtests = F
 
 packages <- c("data.table", "stringr", "dplyr")
 installed_packages <- rownames(installed.packages())
@@ -100,66 +103,75 @@ for (x in seq_along(raw_files)) {
     saveRDS(object = data[[x]], file = cleaned_file)
   }
 }
+saveRDS(object = data, file = "salinasbox/clean_data/all_clean_texts_pregrouping.RDS")
 
-
-#let's make a list of the header/footer content that got removed
-difs <- vector(mode = "list", length = length(raw_files))
-for(i in seq_along(raw_files)){
-  #if you want to compare with totally raw, use raw <- dataraw[[i]]
-  #I am specifically interested in what happened with the 
-  #header/footer removal so I am using raw <- dataintermed[[i]]
-  raw <- dataintermed[[i]]
-  clean <- data[[i]]
+#the rest of this script consists of tests to verify
+#quality of the header/footer removal
+#use the switch at the top of the script to turn this on or off
+if(runtests==T){
   
-  difs[[i]] <- sapply(1:nrow(raw), function(j){
-    #this gives a warning but we have set this up to not match on
-    #empty coll strings so we can suppress warnings
-    suppressWarnings(dplyr::case_when(
-      #no dif because original is blank
-      is.na(raw$text[j]) ~ "",
-      nchar(raw$text[j]) == 0 ~ "",
-      #dif = raw because clean is blank
-      is.na(clean$text[j]) ~ raw$text[j],
-      nchar(coll(clean$text[j])) == 0 ~ raw$text[j],
-      nchar(coll(clean$text[j])) > 0 ~ str_replace(raw$text[j], coll(clean$text[j]), "####"),
-      T ~ "edgecase"
-    ))
+  #let's make a list of the header/footer content that got removed
+  difs <- vector(mode = "list", length = length(raw_files))
+  for(i in seq_along(raw_files)){
+    #if you want to compare with totally raw, use raw <- dataraw[[i]]
+    #I am specifically interested in what happened with the 
+    #header/footer removal so I am using raw <- dataintermed[[i]]
+    raw <- dataintermed[[i]]
+    clean <- data[[i]]
+    
+    difs[[i]] <- sapply(1:nrow(raw), function(j){
+      #this gives a warning but we have set this up to not match on
+      #empty coll strings so we can suppress warnings
+      suppressWarnings(dplyr::case_when(
+        #no dif because original is blank
+        is.na(raw$text[j]) ~ "",
+        nchar(raw$text[j]) == 0 ~ "",
+        #dif = raw because clean is blank
+        is.na(clean$text[j]) ~ raw$text[j],
+        nchar(coll(clean$text[j])) == 0 ~ raw$text[j],
+        nchar(coll(clean$text[j])) > 0 ~ str_replace(raw$text[j], coll(clean$text[j]), "####"),
+        T ~ "edgecase"
+      ))
     })
+  }
+  
+  #look for stuff where there is no difference, to make sure it isn't
+  #categorically missing a certain type of header/footer
+  #good; it just happens on pages that were already empty in dataintermed
+  for(i in 1:length(difs)){
+    print(dataintermed[[i]]$text[is.na(difs[[i]])|nchar(difs[[i]])==0])
+  }
+  #even though there's never zero difference, it's possible it 
+  #just removes the page number and that's it. Let's look at those
+  #cases too just to do a visual inspection and make sure 
+  #there aren't headers/footers that were systematically missed
+  #looks fine. a couple of page nums formatted as "1-3" are missed
+  #but these do not impact the network
+  for(i in 1:length(difs)){
+    print(data[[i]]$text[!is.na(difs[[i]])&nchar(difs[[i]])<6])
+  }
+  
+  #look for long header/footers that got removed
+  #these look good, it's nearly exclusively either tables or references
+  #I exclude the 20140004 plan from this analysis because a bunch of appendix
+  #pages got removed but that's not because of the header/footer tool
+  for(i in c(1:40,42:length(difs))){
+    print(paste0(i, "XXXXXX"))
+    print(difs[[i]][!is.na(difs[[i]]) & nchar(difs[[i]])>600])
+  }
+  
+  #look for when the raw plan page was not empty but the clean plan page is
+  #try this on an example plan to make sure no important things are getting lost
+  #looks good; just a bunch of figure captions and tables
+  i <- 30 #choose a number representing an example plan
+  sampleplan <- dataintermed[[i]]
+  sampleclean <- data[[i]]
+  nas <- sapply(1:nrow(sampleplan), function(j){
+    if((is.na(sampleclean$text[j])|nchar(sampleclean$text[j])==0) & 
+       !is.na(sampleplan$text[j])){
+      sampleplan$text[j]
+    }else{
+      ""
+    }})
+  unlist(nas)
 }
-
-#look for stuff where there is no difference, to make sure it isn't
-#categorically missing a certain type of header/footer
-#good; it just happens on pages that were already empty in dataintermed
-for(i in 1:length(difs)){
-  print(dataintermed[[i]]$text[is.na(difs[[i]])|nchar(difs[[i]])==0])
-}
-#even though there's never zero difference, it's possible it 
-#just removes the page number and that's it. Let's look at those
-#cases too just to do a visual inspection
-for(i in 1:length(difs)){
-  print(data[[i]]$text[!is.na(difs[[i]])&nchar(difs[[i]])<6])
-}
-
-#look for long header/footers that got removed
-#these look fine, it's mostly stuff from tables
-#I exclude the 20140004 plan from this analysis because a bunch of appendix
-#pages got removed but that's not because of the header/footer tool
-for(i in c(1:40,42:length(difs))){
-  print(paste0(i, "XXXXXX"))
-  print(difs[[i]][!is.na(difs[[i]]) & nchar(difs[[i]])>600])
-}
-
-#look for when the raw plan page was not empty but the clean plan page is
-#try this on an example plan to make sure no important things are getting lost
-#looks good; just a bunch of figure captions and tables
-i <- #choose a number
-sampleplan <- dataintermed[[i]]
-sampleclean <- data[[i]]
-nas <- sapply(1:nrow(sampleplan), function(j){
-  if((is.na(sampleclean$text[j])|nchar(sampleclean$text[j])==0) & 
-     !is.na(sampleplan$text[j])){
-    sampleplan$text[j]
-  }else{
-    ""
-  }})
-unlist(nas)
