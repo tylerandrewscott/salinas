@@ -1,5 +1,5 @@
-#Purpose: This script uses pdftools to write the pdf to a txt file
-#if the document is empty, it uses ocr instead
+#Purpose: This script used pdftools to write the pdf to a txt file
+#if the document is empty, it used ocr instead
 
 #set-up: decide whether clobber is true or false,
 #depending on whether you want to force overwrite files

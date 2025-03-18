@@ -1,9 +1,9 @@
-#Purpose: This script cleans the raw .txt files of non-prose pages 
+#Purpose: This script cleaned the raw .txt files of non-prose pages 
 #like maps, tables, etc. by
 #setting a threshold for each page of: 
 #max characters, punctuation, numeric characters, and white space
 #past which it sets page text to NA
-#Headers and footers are also removed here
+#Headers and footers were also removed here
 
 #Set-up: Decide whether clobber (overwrite files) = T or F.
 #Also, there are a few quality tests to verify header/footer removal functionality

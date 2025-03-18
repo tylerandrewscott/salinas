@@ -1,4 +1,5 @@
-#Purpose: This script finds pdfs in the repo that match the EIS numbers from step 1.
+#Purpose: We used this script to generate our project-specific dataset.
+#This script finds pdfs in the repo that match the EIS numbers from step 1.
 #It copies those pdfs to salinasbox, excluding any EPA comment letters and appendices
 
 #Required setup: first set up symbolic link to Box of EPA documents as "repodocuments"
