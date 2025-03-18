@@ -8,17 +8,13 @@ projects$Project.Type <- ifelse(grepl("wind", projects$EIS.Title, ignore.case = 
 projects <- projects[!duplicated(projects),]
 # sort by type, state, name to bring related projects together
 projects <- projects[order(projects$Project.Type, projects$State, projects$EIS.Title, projects$EIS.Number),]
-## now filter for ones we will use in our analysis
+# now filter for ones we will use in our analysis
 eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 # get just EIS numbers 
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
 projects_done <- projects[projects$EIS.Number %in% eis_pdfs_nums,]
-# ones that didn't make it, give to elise to recover any post2012 that are not comment letters
-not_in <- projects[!projects$EIS.Number %in% eis_pdfs_nums,]
-saveRDS(not_in, "salinasbox/intermediate_data/appendix_removal/projs_not_in_done.RDS")
-# csv for EIS docs with appendices removed 
-write.csv(projects_done,"salinasbox/intermediate_data/project_databases/EISlist.csv", row.names = F)
+write.csv(projects_done, "salinasbox/intermediate_data/project_databases/EISlist.csv")
 
 # consolidate wind turbine database by unique name and year because these will be combined into polygons 
 wind_projs <- read.csv("salinasbox/intermediate_data/project_databases/processing/wind_projects_smaller.csv")
