@@ -1,7 +1,8 @@
-#Purpose: This file conducts the supplementary filtering prescribed in 
+#Purpose: This file conducted the supplementary filtering prescribed in 
 #salinasbox/intermediate_data/appendix_removal/!README.docx
-#Then it double checks the list of lost projects that 
+#Then it double checked the list of lost projects that 
 #matched our original criteria but did not end up in our final pdf dataset
+#to make sure there were no losses of actual (properly formatted) plans
 
 #Setup: Between step2 and this step, the "done" database was hand-cleaned
 #to remove pages of appendices. A few other files were also deleted, 
@@ -34,9 +35,12 @@ eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 # get just EIS numbers 
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
-projects_done <- projects[projects$EIS.Number %in% eis_pdfs_nums,]
-# ones that didn't make it, give to elise to recover any post2012 that are not comment letters
-projs_not_in_done <- projects[!projects$EIS.Number %in% eis_pdfs_nums,]
+
+#one of these EIS numbers is a duplicate, so there are actually only 95 projects
+projects_done <- projects_all[projects_all$EIS.Number %in% eis_pdfs_nums,]
+
+# ones that didn't make it, double check to make sure we didn't lose anything unexpectedly
+projs_not_in_done <- projects_all[!projects_all$EIS.Number %in% eis_pdfs_nums,]
 
 #let's make sure everything was filtered ok
 directory_to_search = "repodocuments/text_as_datatable"
@@ -57,3 +61,4 @@ proj_basenames <- basename(matched_projects)
 #or the withdrawn file (20210008)
 #
 proj_basenames
+
