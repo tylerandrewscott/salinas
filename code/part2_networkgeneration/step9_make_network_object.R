@@ -17,7 +17,7 @@ networktype = "raw"
 multiplex = F
 
 filepath <- dplyr::case_when(
-  networktype == "raw" ~ "salinasbox/intermediate_data/extracted_networks/",
+  networktype == "raw" ~ "salinasbox/intermediate_data/raw_extracted_networks/",
   networktype == "minimalist" ~ "salinasbox/clean_data/minimalist_cleaned_networks/",
   networktype == "manual" ~ "salinasbox/clean_data/manually_cleaned_networks/",
   T ~ NA

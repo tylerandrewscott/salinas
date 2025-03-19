@@ -8,7 +8,9 @@
 #with custom equivalence definitions and then turn manual_disambig to T
 #to incorporate these definitions. The file top_entities.csv
 #is generated here and may be helpful in deciding what to include
-#in the manual_disambiguation_key.
+#in the manual_disambiguation_key. 
+#If going this route, after editing the key, change the save filepath 
+#from example_only_cleaned_networks to manually_cleaned_networks
 
 #This requires the textNet package, data.table, and stringr.
 
@@ -47,10 +49,10 @@ groupids <- read.csv("salinasbox/clean_data/groupIDs.csv")
 #update manual_disambiguation_key.csv as desired and then
 #turn on the toggle and run
 
-if(manual_disambig = T){
+if(manual_disambig == T){
   manual <- read.delim("salinasbox/clean_data/manual_disambiguation_key.txt")
   if(any(str_detect(manual$to, "Example"))){
-    stop("The manual disambiguation key needs to be updated with real entity names before generating the disambiguated networks. ")
+    stop("The manual disambiguation key needs to be updated with real entity names before generating the disambiguated networks. After this is done, change the save filepath from example_only_cleaned_networks to manually_cleaned_networks")
   }
   
   for(i in seq_along(myextracts)){
