@@ -46,8 +46,9 @@ parsed <- textNet::parse_text(ret_path,
                               parsed_filenames = parse_fileloc,
                               overwrite = T,
                               custom_entities = list(PARTIES = parties))
-saveRDS(object = parsed, file = "parsed.RDS")
 names(parsed) <- names(texts)
+saveRDS(object = parsed, file = "salinasbox/intermediate_data/all_parsed.RDS")
+
 #put all parts of same eis number together
 
 projects <- vector(mode = "list", length = 
@@ -82,20 +83,21 @@ keptentities <- c("PERSON",
               "LAW", "LANGUAGE",
               "PARTIES")
 for(m in 1:length(projects)){
-  if(overwrite ==T | !file.exists(paste0("salinasbox/intermediate_data/extracted_networks/extract_", names(projects)[m]))){
+  if(overwrite ==T | !file.exists(paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m],".RDS"))){
     extracts[[m]] <- textnet_extract(projects[[m]], 
                                      cl = 4,
                                      keep_entities = keptentities,
                                      return_to_memory = T,
                                      keep_incomplete_edges = T,
-                                     file = paste0("salinasbox/intermediate_data/extracted_networks/extract_", names(projects)[m])
+                                     file = paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m],".RDS")
     )
   }else{
-    print(paste0("file ", paste0("salinasbox/intermediate_data/extracted_networks/extract_", names(projects)[m]),
+    print(paste0("file ", paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m],".RDS"),
                  " already exists."))
   }
   
 }
+saveRDS(object = extracts, file = "salinasbox/intermediate_data/raw_extracts.RDS")
 
 
 
