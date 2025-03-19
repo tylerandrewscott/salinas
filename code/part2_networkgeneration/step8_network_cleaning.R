@@ -16,16 +16,16 @@ manual_disambig = F
 library(stringr)
 library(textNet)
 library(data.table)
-myextractfiles <- list.files("salinasbox/intermediate_data/extracted_networks", full.names=T)
+myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T)
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
-names(myextracts) <- substr(list.files("salinasbox/intermediate_data/extracted_networks", full.names=F),
+names(myextracts) <- substr(list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=F),
                             9,16)
 #this helper function cleans the network. Any filtering steps to 
 #filter certain nodes/edges in the network can go here
 #if you want to save this intermediate file, save it to a new location and 
-#not overwrite the extracted_networks
+#not overwrite the raw_extracted_networks
 #this is not the part where we disambiguate nodes; that's later
 source("code/part2_networkgeneration/helpers/clean.R")
 myextracts <- clean(myextracts)
