@@ -27,6 +27,11 @@ texts <- lapply(files, function(i){
 
 names(texts) <- basename(files)
 
+# to resolve issues with finding python binary with find_python
+library(reticulate)
+myenv <- conda_list(conda = "auto")$python
+use_condaenv(myenv)
+
 ret_path <- find_python_cmd(required_modules = c('spacy', 'en_core_web_lg'))
 
 parties <- c("Project", "Projects",
@@ -44,8 +49,9 @@ parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(f
 parsed <- textNet::parse_text(ret_path,
                               text_list = texts,
                               parsed_filenames = parse_fileloc,
-                              overwrite = T,
+                              overwrite = overwrite,
                               custom_entities = list(PARTIES = parties))
+
 names(parsed) <- names(texts)
 saveRDS(object = parsed, file = "salinasbox/intermediate_data/all_parsed.RDS")
 
