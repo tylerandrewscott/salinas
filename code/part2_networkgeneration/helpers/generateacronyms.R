@@ -19,3 +19,4 @@ for(i in 1:length(mytexts)){
 }
 
 myacronyms <- lapply(mytexts, function(i) find_acronyms(i))
+saveRDS(myacronyms, "salinasbox/intermediate_data/project_specific_acronyms.RDS")
