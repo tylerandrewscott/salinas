@@ -6,7 +6,7 @@ library(ggraph)
 #Setup:
 #choose type of networks to use: raw, minimalist, or manual
 #(see previous step for explanation)
-networktype = "raw"
+networktype = "minimalist"
 #decide whether you want a multiplex graph or a weighted graph
 #a bunch of network statistics can't be calculated with a 
 #multiplex graph, so I recommend weighted if you're going to 
