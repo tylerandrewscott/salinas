@@ -41,12 +41,6 @@ myextracts <- clean(myextracts)
 #the file below is an ID matcher between the Group.Name and the eis numbers
 groupids <- read.csv("salinasbox/clean_data/groupIDs.csv")
 
-#the helper code below generates the file called top_entities, which we can
-#inspect and save as a csv
-#this top_entities file can be used to inform manual disambiguation instructions
-source("code/part2_networkgeneration/helpers/get_top_nodes.R")
-write.csv(top_entities, "salinasbox/clean_data/top_entities.csv")
-
 #the helper code below generates the file called myacronyms,
 source("code/part2_networkgeneration/helpers/generateacronyms.R")
 myacronyms <- readRDS("salinasbox/intermediate_data/project_specific_acronyms.RDS")
@@ -156,6 +150,19 @@ if(manual_disambig == T){
     saveRDS(cleaned_extract, paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS"))
   }
 }
+
+
+#the helper code below generates the file called top_entities, which we can
+#inspect and save as a csv
+#this top_entities file can be used to inform manual disambiguation instructions
+#they are lower-case because textNet::disambiguate maps nodes case-sensitively and THEN
+#at the very end combines identical nodes with different capitalization
+#This is because during testing this was a useful way to prevent duplicate nodes
+#The result is that this top_entities file is in lowercase, but any rows added
+#to manual_disambiguation_key ought to be in title case, as shown in the examples
+source("code/part2_networkgeneration/helpers/get_top_nodes.R")
+top_entities <- read.csv("salinasbox/clean_data/top_entities.csv")
+
 
 #fine print about disambiguate()
 #the disambiguate function has several built-in cleaning functions. 
