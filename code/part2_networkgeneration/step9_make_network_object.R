@@ -2,6 +2,9 @@
 #visualization or TBD network analysis
 
 library(ggraph)
+library(textNet)
+library(stringr)
+
 
 #Setup:
 #choose type of networks to use: raw, minimalist, or manual
@@ -31,6 +34,11 @@ myextracts <- lapply(myextractfiles,
 network_graphs <- lapply(myextracts, function(i)
 {export_to_network(i, "igraph", keep_isolates = F,
                    collapse_edges = !multiplex, self_loops = T)[[1]]})
+
+# match EIS numbers to network graphs
+extracts_names <- paste0("EIS_", (str_sub(basename(myextractfiles), -12, -5)))
+names(network_graphs) <- extracts_names
+saveRDS(network_graphs, "salinasbox/intermediate_data/network_graphs_all_entities.RDS")
 
 #here's the plot of the first EIS as an example
 #on a weighted network without isolates
