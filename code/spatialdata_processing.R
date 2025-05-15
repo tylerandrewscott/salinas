@@ -1,50 +1,78 @@
-# seeing what data looks like
+
 library(sf)
-wind_projs <- st_read("salinasbox/raw_data/uswindshapefiles/uswtdb_v7_2_20241120.shp")
-ex <- wind_projs[wind_projs$p_name == "Skookumchuck",]
-# library(dplyr)
-# ex <- ex %>%
-#   select(case_id, t_state, t_county, t_fips, p_name, p_year)
-# geom is points of turbine location 
-plot(ex, max.plot = 1)
+library(dplyr)
+library(tidyr)
 
-# for solar geom is polys of sites
-solar_projs <- st_read("salinasbox/raw_data/ussolarshapefiles/uspvdb_v2_0_20240801.shp")
-plot(solar_projs[4,], max.plot = 1)
+# wind projs are points of turbines
+uswtdb <- st_read("salinasbox/raw_data/uswindshapefiles/uswtdb_v7_2_20241120.shp")
+uswtdb$case_id <- as.character(uswtdb$case_id)
+wind_projs <- uswtdb[c("case_id", "t_state", "t_county", "p_name", "p_year", "geometry")]
+colnames(wind_projs) <- c("case_id", "state", "county", "p_name", "p_year", "geometry")
+wind_projs$type <- "wind"
 
-## replace this with read in all .shp in folder
+#solar projs are polys of sites
+uspvdb <- st_read("salinasbox/raw_data/ussolarshapefiles/uspvdb_v2_0_20240801.shp")
+uspvdb$case_id <- as.character(uspvdb$case_id)
+solar_projs <- uspvdb[c("case_id", "p_state", "p_county", "p_name", "p_year", "geometry")]
+colnames(solar_projs) <- c("case_id", "state", "county", "p_name", "p_year", "geometry")
+solar_projs$type <- "solar"
+
+# solar is projected CRS, wind is not -- so need to project wind to solar 
+wind_projs <- st_transform(wind_projs, st_crs(solar_projs))
+st_crs(wind_projs) == st_crs(solar_projs) # TRUE
+
+# now get case_ids for other wind turbines in same project as case_id used to match to EIS manually 
+# and merge points into multipoint
+
+wind_multipoint <- wind_projs %>%
+  group_by(p_name, p_year) %>%
+  summarise(
+    geometry = st_union(geometry),
+    project_caseIDs = paste0(case_id, collapse = ", "), # get groups of case_ids per project
+    .groups = "drop") 
+
+# match to EIS
+EIS_caseIDs <- read.csv("salinasbox/intermediate_data/project_databases/test_matched.csv") %>%
+  select(c(EIS.Number, EIS.Title, Document.Type, Project.Type, Case.ID))
+
+EIS_caseIDs_long <- EIS_caseIDs %>%
+  separate_longer_delim(cols = Case.ID, delim = ", ")
+
+# expand group back out but now each one has multipoint geom
+wind_expanded <- wind_multipoint %>%
+  mutate(group_caseID_list = str_split(project_caseIDs, ",\\s*")) %>% # use ",\\s*" instead of ", " in case the spaces between are uneven or if there are no spaces
+  unnest(group_caseID_list) %>%
+  rename(Case.ID = group_caseID_list)
+
+# so can now match on Case.ID from EIS list but using the single case.id will give multipoint for entire project
+wind_matched <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Wind",], wind_expanded, by = "Case.ID")
+
+### NEED TO CHECK THESE, SOME ARE NOT OBVIOUS MATCHES
+
+solar_matched <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Solar",], solar_projs, by = join_by("Case.ID" == "case_id"))
+
+all_matched <- bind_rows(select(solar_matched, -state, -county), wind_matched)
+
+
+
+
+## replace this with read all .shp in folder
 crithab_line <- st_read("salinasbox/raw_data/crithab_all_layers/CRITHAB_LINE.shp")
 crithab_poly <- st_read("salinasbox/raw_data/crithab_all_layers/crithab_poly.shp")
 tribal_lands <- st_read("salinasbox/raw_data/tl_2022_us_aiannh/tl_2022_us_aiannh.shp")
 
 gis_list <- list(crithab_line, crithab_poly, tribal_lands)
 
-## workflow will be to project all files to match solar_projs equal area projection (including wind turbine locations)
+## workflow will be to project all files to match solar_projs equal area projection
 gis_list_transformed <- lapply(gis_list, function(x) {
-  if (st_crs(x) != st_crs(solar_proj)) {
+  if (st_crs(x) != st_crs(solar_projs)) {
     st_transform(x, st_crs(solar_projs)) 
   } else {
       x
     }
   })
 
-# ex <- st_transform(ex, st_crs(solar_projs))
-# ex2 <- st_transform(ex2, st_crs(solar_projs))
 
-library(dplyr)
-#turn wind turbine points into polygons
-ex <- wind_projs[1:80,]
-ex2 <- ex %>%
-  group_by(p_name, p_year) %>% # get turbines from same year at same project
-  summarise(geometry = st_union(geometry)) %>% # merge into multipoint 
-  mutate(geometry = st_convex_hull(geometry)) %>%  
-  rowwise() %>% # add buffers to points and lines that result if didn't make polygon
-  mutate(geometry = if (st_geometry_type(geometry) != "POLYGON") {
-    st_buffer(geometry, dist = 1)
-  } else {
-    geometry
-  }) %>%
-  ungroup()
 
 # what the polygons look like 
 plot(st_geometry(ex2[ex2$p_name == "25 Mile Creek",], max.plot = 1))
@@ -53,26 +81,5 @@ plot(st_geometry(ex[ex$p_name == "25 Mile Creek",]), col = 'black', add = TRUE)
 # what a linestrings look like 
 plot(st_geometry(ex2[ex2$p_name == "6th Space Warning Squadron",], max.plot = 1))
 plot(st_geometry(ex[ex$p_name == "6th Space Warning Squadron",]), col = 'black', add = T)
-
-
-
-
-
-if (n)
-  
-  
-#   ))
-#   if (st_geometry_type(ex2[i,]) != "POLYGON") 
-#     mutate(geometry = st_buffer(ex2[i,], dist = 1))
-#   else mutate(geometry = geometry)
-# }
-# 
-# if (st_geometry_type())
-#   case_when(st_geometry_type(geometry) != "POLYGON" ~ mutate(geometry = st_buffer(geometry, dist = 10), geometry = geometry))
-
-
-
-
-
 
 
