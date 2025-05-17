@@ -12,7 +12,9 @@ networks_filtered <- lapply(network_graphs, function(network) {
   return(filtered_no_iso)
 })
 
+saveRDS(networks_filtered, "salinasbox/clean_data/filtered_networks.RDS")
 
+## old network graph ex
 ggraph(network_graphs[[1]], layout = "fr") +
   geom_edge_fan(aes(alpha = weight),
                 end_cap = circle(1, "mm"),
@@ -22,6 +24,7 @@ ggraph(network_graphs[[1]], layout = "fr") +
   geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
   labs(title = "Example Network Plot") + theme_void()
 
+## filtered network graph example
 ggraph(networks_filtered[[5]], layout = "fr") +
   geom_edge_fan(aes(alpha = weight),
                 end_cap = circle(1, "mm"),
@@ -30,9 +33,5 @@ ggraph(networks_filtered[[5]], layout = "fr") +
                 arrow = arrow(angle = 15, length = unit(0.07, "inches"), ends = "last", type = "closed"))+
   geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
   labs(title = "Example Network Plot") + theme_void()
-
-graph_before_filtering
-graph_after_filtering
-
 
 E(networks_filtered[[5]])
