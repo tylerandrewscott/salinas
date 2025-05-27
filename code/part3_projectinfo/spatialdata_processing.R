@@ -2,6 +2,7 @@
 library(sf)
 library(dplyr)
 library(tidyr)
+library(stringr)
 
 # wind projs are points of turbines
 uswtdb <- st_read("salinasbox/raw_data/uswindshapefiles/uswtdb_v7_2_20241120.shp")
@@ -31,10 +32,14 @@ wind_multipoint <- wind_projs %>%
     project_caseIDs = paste0(case_id, collapse = ", "), # get groups of case_ids per project
     .groups = "drop") 
 
+#save as geopackage because different geom types and text field limitations
+st_write(wind_multipoint, "salinasbox/intermediate_data/project_databases/wind_multipoint.gpkg")
+
 # match to EIS
-EIS_caseIDs <- read.csv("salinasbox/intermediate_data/project_databases/test_matched.csv") %>%
+EIS_caseIDs <- read.csv("salinasbox/intermediate_data/project_databases/found_caseIDs_may22.csv") %>%
   select(c(EIS.Number, EIS.Title, Document.Type, Project.Type, Case.ID))
 
+# split when multiple caseIDs found
 EIS_caseIDs_long <- EIS_caseIDs %>%
   separate_longer_delim(cols = Case.ID, delim = ", ")
 
@@ -47,11 +52,18 @@ wind_expanded <- wind_multipoint %>%
 # so can now match on Case.ID from EIS list but using the single case.id will give multipoint for entire project
 wind_matched <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Wind",], wind_expanded, by = "Case.ID")
 
+### compare to matching before multipoint
+wind_match_point <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Wind",], wind_projs, by = join_by("Case.ID" == "case_id")) %>%
+  select(EIS.Number, Document.Type, EIS.Title, Case.ID, p_name, Project.Type, geometry)
+
+solar_matched <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Solar",], solar_projs, by = join_by("Case.ID" == "case_id")) %>%
+  select(EIS.Number, Document.Type, EIS.Title, Case.ID, p_name, Project.Type, geometry)
+
+all_matched <- rbind(solar_matched, wind_match_point)
+
 ### NEED TO CHECK THESE, SOME ARE NOT OBVIOUS MATCHES
 
-solar_matched <- left_join(EIS_caseIDs_long[EIS_caseIDs_long$Project.Type == "Solar",], solar_projs, by = join_by("Case.ID" == "case_id"))
 
-all_matched <- bind_rows(select(solar_matched, -state, -county), wind_matched)
 
 
 
