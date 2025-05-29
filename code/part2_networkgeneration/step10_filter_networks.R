@@ -2,7 +2,7 @@ library(igraph)
 
 network_graphs <- readRDS("salinasbox/intermediate_data/network_graphs_all_entities.RDS")
 # want to filter for certain entity types
-networks_filtered <- lapply(network_graphs, function(network) {
+filtered_networks <- lapply(network_graphs, function(network) {
   # only keep entity types we want
   filtered <- subgraph(network, V(network)[vertex_attr(network,"entity_type") %in% c("PERSON", "NORP", "ORG", "GPE", "PARTIES")])
   # remove isolates
@@ -12,7 +12,26 @@ networks_filtered <- lapply(network_graphs, function(network) {
   return(filtered_no_iso)
 })
 
-saveRDS(networks_filtered, "salinasbox/clean_data/filtered_networks.RDS")
+# associate networks with group ID and add to network object name
+
+groups <- read.csv("salinasbox/clean_data/GroupIDs.csv")
+new_names <- names(filtered_networks) # initialize vector to replace with new names
+for (i in seq_along(filtered_networks)) {
+  eis <- names(filtered_networks)[i]
+  eis_num <- sub("EIS_", "", eis) # get rid of "EIS_" so just number to match on
+  matches <- match(eis_num, groups$EIS.Number) # get index of matches
+  if(!is.na(matches)) {
+    attr(filtered_networks[[i]], "group") <- groups$Group.Name[matches] # make attribute for group name
+  }
+  if (!is.na(attr(filtered_networks[[i]], "group")) && !is.null(attr(filtered_networks[[i]], "group"))) {
+    new_names[i] <- paste0(attr(filtered_networks[[i]], "group"), "_", eis_num) # make vector of new names with _group added
+  } 
+}
+# assign new names
+names(filtered_networks) <- new_names
+filtered_networks <- filtered_networks[order(names(filtered_networks))]
+
+saveRDS(filtered_networks, "salinasbox/clean_data/filtered_networks.RDS")
 
 ## old network graph ex
 ggraph(network_graphs[[1]], layout = "fr") +
