@@ -1,21 +1,25 @@
-# solar and wind project metadata 
+# solar and wind project metadata for eis with "wind" or "solar" in title
 projects_all <- readRDS("salinasbox/solarwind_project_details.RDS")
-projects <- projects_all[,c("EIS.Number", "EIS.Title", "Document.Type", "State", "Federal.Register.Date")] 
-# get wind or solar project type
-projects$Project.Type <- ifelse(grepl("solar", projects$EIS.Title, ignore.case = T), "Solar", "other")
-projects$Project.Type <- ifelse(grepl("wind", projects$EIS.Title, ignore.case = T), "Wind", projects$Project.Type)
-# sort by type, state, name to bring related projects together
-projects <- projects[order(projects$Project.Type, projects$State, projects$EIS.Title, projects$EIS.Number),]
-# now filter for ones we will use in our analysis
+# plans used in analysis after filtering
 eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 # get just EIS numbers 
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
-# matches
-projects_done <- projects[projects$EIS.Number %in% eis_pdfs_nums,]
-projects_done <- projects_done[!duplicated(projects_done),]
+# get info for plans used in analysis
+projects <- projects_all %>%
+  select(EIS = EIS.Number, 
+         title = EIS.Title, 
+         doc_type = Document.Type, 
+         lead_agency = Agency, 
+         state = State) %>%
+  filter(EIS %in% eis_pdfs_nums) %>%
+  mutate(year = substr(EIS, 1, 4),
+         project_type = case_when(grepl("solar", title, ignore.case = T) ~ "Solar",
+                                  grepl("wind", title, ignore.case = T) ~ "Wind")) %>%
+  unique() %>%
+  arrange(project_type, title, state) 
 
 EIS_file <- "salinasbox/intermediate_data/project_databases/EISlist.csv"
-write.csv(projects_done, EIS_file, row.names = FALSE)
+write.csv(projects, EIS_file, row.names = FALSE)
 
 # consolidate wind turbine database by unique name and year because these will be combined into polygons 
 # manually removed some columns when first downloading data, in "processing" folder
