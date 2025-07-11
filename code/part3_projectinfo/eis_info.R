@@ -26,3 +26,4 @@ EIS_file <- "salinasbox/intermediate_data/project_databases/EISlist.csv"
 write.csv(projects, EIS_file, row.names = FALSE)
 
 ## ask elise about some of the ones that aren't in sample (panoche, alta, beech, buckeye(i think we end up dropping this), empire, mccoy, mohave, upper great plains is programamtic, revolution, )
+## might be because we did not have the actual file for them, only epa comment letters? i will check box ...
