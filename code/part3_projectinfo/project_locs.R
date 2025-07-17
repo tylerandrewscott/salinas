@@ -1,3 +1,4 @@
+# this script gets location data for the google maps links that anya found for our projects based on her assessment of the project center from the project location image in the eis doc
 
 library(dplyr)
 library(httr)
@@ -60,7 +61,7 @@ spatial_locs <- found_locs %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326)  # WGS84 (lat/lon)
 
 
-write.csv(spatial_locs, "salinasbox/intermediate_data/project_databases/google_maps_points.csv")
+st_write(spatial_locs, "salinasbox/intermediate_data/project_databases/google_maps_points.gpkg", append = F)
 
 
 
