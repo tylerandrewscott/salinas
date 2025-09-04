@@ -11,9 +11,9 @@
 #this led to the removal of one EIS number from the dataset due to lack of a 
 #clean pdf available for the plan.
 
-projects_all <- readRDS("salinasbox/solarwind_project_details.RDS")
+projects_all <- readRDS("salinasbox/solarwind_project_details.RDS") 
 removethesenums <- projects_all$EIS.Number[
-  stringr::str_detect(projects_all$EIS.Title, "(WITHDRAWN|PROGRAMMATIC)\\s*-\\s*")]
+  stringr::str_detect(projects_all$EIS.Title, regex("(WITHDRAWN|PROGRAMMATIC)", ignore_case = T))]
 
 eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 # get just EIS numbers 
@@ -36,13 +36,14 @@ eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
 
-#one of these EIS numbers is a duplicate, so there are actually only 95 projects
+#one of these EIS numbers is a duplicate (grapevine final 20120181) from original rds file, so there are actually only 93 projects
 projects_done <- projects_all[projects_all$EIS.Number %in% eis_pdfs_nums,]
 
 # ones that didn't make it, double check to make sure we didn't lose anything unexpectedly
 projs_not_in_done <- projects_all[!projects_all$EIS.Number %in% eis_pdfs_nums,]
 
 #let's make sure everything was filtered ok
+# this uses the symbolic link "repodocuments" to the enepa_repository Box folder 
 directory_to_search = "repodocuments/text_as_datatable"
 pdf_directory <- "repodocuments/documents"
 filelist <- list.files(directory_to_search, recursive = T)
@@ -56,7 +57,7 @@ proj_basenames <- basename(matched_projects)
 #these are the filenames corresponding to eis numbers that match our 
 #criteria but didn't end up in our database
 #it's because we only have EPA comment letters for them
-#or it was the programmatic file (20130070)
+#or it was a programmatic file (20130070, 20190071, 20190177)
 #or the tracked changes file we removed (20150365)
 #or the withdrawn file (20210008)
 #
