@@ -3,6 +3,7 @@
 #Then it double checked the list of lost projects that 
 #matched our original criteria but did not end up in our final pdf dataset
 #to make sure there were no losses of actual (properly formatted) plans
+# It produces a dataframe with information on the final EIS documents identified by this process and used in our sample
 
 #Setup: Between step2 and this step, the "done" database was hand-cleaned
 #to remove pages of appendices. A few other files were also deleted, 
@@ -63,10 +64,16 @@ proj_basenames <- basename(matched_projects)
 #
 proj_basenames
 
-# list of final EIS docs used for networks 
-final_eis_networks <- projects_all %>%
+# create list of final EIS docs used for networks, join same projects together using groups.csv (created group names for draft/final of same project)
+groups <- read.csv("salinasbox/clean_data/GroupIDs.csv") %>%
+  select(EIS.Number, Group.Name)
+eis_networks <- projects_all %>%
   select(EIS.Number, Title, Document.Type, State, Lead.Agency) %>%
   filter(EIS.Number %in% eis_pdfs_nums) %>%
-  unique()
+  unique() %>%
+  mutate(Year = as.factor(substr(EIS.Number, 1, 4)),
+                 Project.Type = case_when(grepl("solar", Title, ignore.case = T) ~ "Solar",
+                                          grepl("wind", Title, ignore.case = T) ~ "Wind")) %>%
+  left_join(groups)
 
-saveRDS(final_eis_networks, file = "salinasbox/intermediate_data/final_eis_for_networks.RDS")
+write.csv(final_eis_networks, "salinasbox/clean_data/eis_info.csv")
