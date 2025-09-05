@@ -1,4 +1,4 @@
-# script to simplify wind and solar databases for Anya to match EIS projects to 
+# this script simplified the US wind and solar databases from USGS for Anya to match EIS projects in our sample to by comparing project and eis title names
 
 # consolidate wind turbine database by unique name and year because these will be combined
 # manually removed some columns to clean up when first downloading data, in "processing" folder

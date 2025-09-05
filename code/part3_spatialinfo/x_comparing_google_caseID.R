@@ -1,4 +1,5 @@
-## comparing geom for those from case ids and ones anya also found on google maps 
+## comparing geom for those from case ids and ones anya also found on google maps (by mistake, but provided a useful way to check if our estimations were reasonable. i'd say they are fine)
+
 library(sf)
 library(dplyr)
 library(leaflet)

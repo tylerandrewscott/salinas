@@ -1,0 +1,80 @@
+---
+title: "tables"
+author: "Sara Ludwick"
+date: "2025-07-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+knitr::opts_knit$set(root.dir = "/Users/saraludwick/Documents/research/salinas")
+```
+
+```{r}
+projects <- read.csv("salinasbox/intermediate_data/project_databases/EISlist.csv")
+projects$year <- as.character(projects$year) # to join different classes
+projects <- projects %>%
+  mutate(
+    region = case_when(
+      state %in% c("CA", "NV", "AZ", "NM", "UT", "CO", "WY", "MT", "ID", "WA", "OR", "AK", "HI") ~ "West",
+      state %in% c("ND", "SD", "NE", "KS", "IA", "MN", "MO") ~ "Midwest",
+      state %in% c("WI", "IL", "IN", "OH", "MI") ~ "Midwest",
+      state %in% c("NY", "PA", "NJ", "MA", "CT", "RI", "VT", "NH", "ME", "MD", "DC", "DE") ~ "Northeast",
+      state %in% c("VA", "WV", "KY", "TN", "NC", "SC", "GA", "FL", "AL", "MS", "LA", "AR", "OK", "TX") ~ "South",
+      state == "Multi" ~ "Multi-state",
+      TRUE ~ "Other/Unknown"
+    ),
+    year_group = case_when(
+      year %in% c("2012", "2013", "2014", "2015") ~ "2012–2015",
+      year %in% c("2016", "2017", "2018", "2019") ~ "2016–2019",
+      year %in% c("2020", "2021", "2022", "2023") ~ "2020–2023",
+      TRUE ~ "Other/Unknown"
+    )
+  )
+```
+
+```{r}
+# Prepare descriptive stats
+var_descriptives <- projects %>%
+  select(doc_type, lead_agency, region, year_group, project_type) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "Category") %>%
+  group_by(Variable, Category) %>%
+  summarise(Count = n(), .groups = "drop") %>%
+  mutate(Percentage = paste0(round(Count / sum(Count) * 100, 1), "%")) 
+
+# Separate year_group and handle chronological order
+var_descriptives <- var_descriptives %>%
+  mutate(Category = as.character(Category)) %>%
+  mutate(Category = if_else(Variable == "year_group",
+                            factor(Category, levels = c("2012–2015", "2016–2019", "2020–2023"), ordered = TRUE),
+                            Category))
+
+table_clean <- var_descriptives %>%
+  mutate(Display = ifelse(duplicated(Variable), paste0("  ", as.character(Category)), as.character(Variable))) %>%
+  select(Display, Count, Percentage)
+
+# Create simple copy-paste table
+table_clean %>%
+  kable(format = "pipe", col.names = c("Category", "Count", "Percentage"))
+
+```
+
+```{r}
+table_formatted <- var_descriptives %>%
+  group_by(Variable) %>%
+  mutate(
+    Display = ifelse(row_number() == 1, Variable, paste0("   ", Value))
+  ) %>%
+  ungroup() %>%
+  mutate(
+    Display = ifelse(Display %in% Variable, Display, paste0("   ", Value))
+  ) %>%
+  select(Display, Count, Percentage)
+
+# Bold only the headers (Variable rows)
+row_bold <- which(table_formatted$Display %in% var_descriptives$Variable)
+
+
+```
