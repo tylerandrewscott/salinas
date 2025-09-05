@@ -76,4 +76,4 @@ eis_networks <- projects_all %>%
                                           grepl("wind", Title, ignore.case = T) ~ "Wind")) %>%
   left_join(groups)
 
-write.csv(final_eis_networks, "salinasbox/clean_data/eis_info.csv")
+write.csv(eis_networks, "salinasbox/clean_data/eis_info.csv", row.names = FALSE)
