@@ -36,7 +36,7 @@ eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
 
-#one of these EIS numbers is a duplicate (grapevine final 20120181) from original rds file, so there are actually only 93 projects
+#one of these EIS numbers is a duplicate (grapevine final 20120181) from original rds file, so there are actually only 91 projects
 projects_done <- projects_all[projects_all$EIS.Number %in% eis_pdfs_nums,]
 
 # ones that didn't make it, double check to make sure we didn't lose anything unexpectedly
@@ -57,9 +57,16 @@ proj_basenames <- basename(matched_projects)
 #these are the filenames corresponding to eis numbers that match our 
 #criteria but didn't end up in our database
 #it's because we only have EPA comment letters for them
-#or it was a programmatic file (20130070, 20190071, 20190177)
+#or it was a programmatic file (20130070, 20190071, 20190177, 20150120, 20160078)
 #or the tracked changes file we removed (20150365)
 #or the withdrawn file (20210008)
 #
 proj_basenames
 
+# list of final EIS docs used for networks 
+final_eis_networks <- projects_all %>%
+  select(EIS.Number, Title, Document.Type, State, Lead.Agency) %>%
+  filter(EIS.Number %in% eis_pdfs_nums) %>%
+  unique()
+
+saveRDS(final_eis_networks, file = "salinasbox/intermediate_data/final_eis_for_networks.RDS")
