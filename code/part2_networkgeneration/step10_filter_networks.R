@@ -2,19 +2,23 @@ library(igraph)
 library(stringr)
 
 network_graphs <- readRDS("salinasbox/intermediate_data/network_graphs_all_entities.RDS")
-# want to filter for certain entity types
+# want to filter for certain entity types, remove isolates, and clean up some nodes
 filtered_networks <- lapply(network_graphs, function(network) {
   # only keep entity types we want
-  filtered <- subgraph(network, V(network)[vertex_attr(network,"entity_type") %in% c("PERSON", "ORG", "GPE", "PARTIES")])
+  keep_entities <- c("PERSON", "ORG", "GPE", "PARTIES")
+  filtered <- induced_subgraph(network, V(network)[vertex_attr(network,"entity_type") %in% keep_entities])
   # remove isolates
   isolates <- which(igraph::degree(filtered) == 0)
-  filtered_no_iso <- igraph::delete.vertices(filtered, isolates)
-  
-  return(filtered_no_iso)
+  no_isolates <- igraph::delete.vertices(filtered, isolates)
+  # clean nodes up
+  keep_abbvs <- tolower(c(state.abb, "US", "DC"))
+  drop_weird <- c("ghg", "llc", "dba")
+  # remove weird common nodes and those with 2 or fewer chars that are not state or us abbreviations
+  clean_nodes <- induced_subgraph(no_isolates, (V(no_isolates)[!(name %in% drop_weird) & (name %in% keep_abbvs | nchar(name) > 2)]))
+  return(clean_nodes)
 })
 
 # associate networks with group ID to link related projects and add to network object name
-
 groups <- read.csv("salinasbox/clean_data/GroupIDs.csv")
 new_names <- names(filtered_networks) # initialize vector to replace with new names
 for (i in seq_along(filtered_networks)) {
@@ -28,16 +32,15 @@ for (i in seq_along(filtered_networks)) {
     new_names[i] <- paste0(attr(filtered_networks[[i]], "group"), "_", eis_num) # make vector of new names with _group added
   } 
 }
-
 # assign new names
 names(filtered_networks) <- new_names
 filtered_networks <- filtered_networks[order(names(filtered_networks))]
 
-# manually remove networks for docs we removed after fixing preprocessing code
+# manually remove networks for docs we removed after fixing preprocessing code (step3) to get final sample
 network_nums <- stringr::str_extract(names(filtered_networks), "\\d{8}$")
-final_eis_nums <- readRDS("salinasbox/intermediate_data/final_eis_for_networks.RDS")
-final_nums <- as.character(final_eis_networks$EIS.Number)
-filtered_networks <- filtered_networks[network_nums %in% nums]
+eis_info <- read.csv("salinasbox/clean_data/eis_info.csv")
+final_nums <- as.character(eis_info$EIS.Number)
+filtered_networks <- filtered_networks[network_nums %in% final_nums]
 
 saveRDS(filtered_networks, "salinasbox/clean_data/filtered_networks.RDS")
 
