@@ -12,7 +12,7 @@ filtered_networks <- lapply(network_graphs, function(network) {
   no_isolates <- igraph::delete.vertices(filtered, isolates)
   # clean nodes up
   keep_abbvs <- tolower(c(state.abb, "US", "DC"))
-  drop_weird <- c("ghg", "llc", "dba")
+  drop_weird <- c("ghg", "llc", "limited_liability_corporation", "dba")
   # remove weird common nodes and those with 2 or fewer chars that are not state or us abbreviations
   clean_nodes <- induced_subgraph(no_isolates, (V(no_isolates)[!(name %in% drop_weird) & (name %in% keep_abbvs | nchar(name) > 2)]))
   return(clean_nodes)
