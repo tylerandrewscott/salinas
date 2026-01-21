@@ -10,6 +10,7 @@
 #(we shouldn't need to do this unless changes made to network generation process)
 
 overwrite = F
+test = T
 library(textNet)
 library(findpython)
 #spacy_parse() takes a named list where 
@@ -30,9 +31,9 @@ names(texts) <- basename(files)
 # to resolve issues with finding python binary with find_python
 library(reticulate)
 myenv <- conda_list(conda = "auto")$python
-use_condaenv(myenv)
+use_condaenv(myenv[4])
 
-ret_path <- find_python_cmd(required_modules = c('spacy', 'en_core_web_lg'))
+ret_path <- find_python_cmd(required_modules = c('spacy', 'en_core_web_lg','en_core_web_trf'))
 
 parties <- c("Project", "Projects",
              "Applicant", "Applicants",
@@ -46,10 +47,30 @@ parties <- c("Project", "Projects",
 #where we want to save these parsed dataframes:
 parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(files))
 
+
+ets <- read.csv('salinasbox/dictionary_data/test_entities.csv',header = F)
+ets <- ets[!grepl('\\:',ets$V2),]
+library(stringr)
+
+dict_ents <- entity_specify(unique(ets$V2),case_sensitive = T,whole_word_only = T)
+
 parsed <- textNet::parse_text(ret_path,
-                              text_list = texts,
+                              text_list = texts[1:2],
                               parsed_filenames = parse_fileloc,
                               overwrite = overwrite,
+                              ##### test = T forces run
+                              ##### otherwise, if file already exists, will load
+                              test = test,
+                              #### will use gpu on FARM ###
+                              use_gpu = 'auto',
+                              ### NEW THING I CHANGED MODEL ####
+                              model = "en_core_web_trf",
+                              ### add entityrulers ###
+                              entity_ruler_patterns = dict_ents,
+                              ### override if NER gaps a entityruler object ###
+                              overwrite_ents = T,
+                              ### entityruler has final say ### 
+                              ruler_position = 'after'
                               custom_entities = list(PARTIES = parties))
 
 names(parsed) <- names(texts)
