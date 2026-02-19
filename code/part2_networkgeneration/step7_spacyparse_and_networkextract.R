@@ -4,13 +4,15 @@
 # 
 
 overwrite <- F                                                                                                                                                                                               
-test <- T                                                                                                                                                                                                    
+test <- F                                                                                                                                                                                                   
 
 library(textNet)                                                                                                                                                                                             
 library(spacyr)                                                                                                                                                                                              
 library(stringr)                                                                                                                                                                                             
 
-ret_path <- "/home/tscott1/.conda/envs/textnet/bin/python"      
+
+#ret_path <- "/home/tscott1/.conda/envs/textnet/bin/python"      
+ret_path <- grep('spacy-env',reticulate::conda_list()$python,value = T)
 
 # Purpose: This script takes the text files we cleaned in part 1,                                                        
 # and runs spaCy on them to identify named entities and                                                                  
@@ -24,8 +26,12 @@ ret_path <- "/home/tscott1/.conda/envs/textnet/bin/python"
 files <- list.files(path = "salinasbox/clean_data/pdf_to_text_clean",                                                    
                     pattern = ".RDS", full.names = T)                                                                    
 
+
 texts <- lapply(files, function(i){                                                                                      
-  readRDS(i)$text                                                                                                        
+  tmp <- readRDS(i)$text
+  tmp <- str_replace_all(tmp,'\\n',' ')
+  tmp <- tmp[!is.na(tmp)&nchar(tmp)>200]
+  tmp
 })                                                                                                                       
 names(texts) <- basename(files)                                                                                          
 
@@ -40,39 +46,42 @@ parties <- c("Project", "Projects",
 
 parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(files))                                   
 
-ets <- read.csv('salinasbox/dictionary_data/test_entities.csv', header = F)                                              
-ets <- ets[!grepl('\\:', ets$V2), ]                                                                                      
+ets <- read.csv('salinasbox/dictionary_data/final_acronym_dictionary.csv', header = T)         
 
-dict_ents <- entity_specify(unique(ets$V2), case_sensitive = T, whole_word_only = T)                                     
+ets <- ets[!grepl('\\:', ets$name), ] 
+ets <- ets[!sapply(ets$acronym,PeriodicTable::isSymb),]
+ets$clean <- stringr::str_replace_all(ets$name,'_',' ')
+
+dict_ents <- entity_specify(unique(ets$clean), case_sensitive = T, whole_word_only = T)                                     
 
 # === RUN PARSING ===                                                                                                    
-parsed <- textNet::parse_text(ret_path,                                                                                  
-                              text_list = texts[1],                                                                      
+parsed <- textNet::parse_text_trf(ret_path,                                                                                  
+                              text_list = texts,                                                                      
                               parsed_filenames = parse_fileloc,                                                          
                               overwrite = overwrite,                                                                     
-                              test = test,                                                                               
-                              use_gpu = 'gpu',                                                                           
-                              model = "en_core_web_trf",                                                                 
+                              test = test,                                                               
                               entity_ruler_patterns = dict_ents,                                                         
                               overwrite_ents = T,                                                                        
                               ruler_position = 'after',                                                                  
                               custom_entities = list(PARTIES = parties))                                                 
 
-names(parsed) <- names(texts)                                                                                            
-saveRDS(object = parsed, file = "salinasbox/intermediate_data/all_parsed.RDS")                                           
+# === GROUP BY EIS NUMBER ===
+# Load all parsed docs from parquet (saved by parse_text_trf)
+parsed_files <- list.files("salinasbox/intermediate_data/parsed_files", pattern = "\\.parquet$", full.names = TRUE)
+parsed <- lapply(parsed_files, textNet::read_parsed_trf)
+names(parsed) <- basename(parsed_files)
 
-# === GROUP BY EIS NUMBER ===                                                                                            
-projects <- vector(mode = "list", length = length(unique(substr(basename(files), 1, 8))))                                
-names(projects) <- unique(substr(basename(files), 1, 8))                                                                 
+projects <- vector(mode = "list", length = length(unique(substr(basename(parsed_files), 1, 8))))
+names(projects) <- unique(substr(basename(parsed_files), 1, 8))
 
-filenum <- 1                                                                                                             
-for(i in 1:length(projects)){                                                                                            
-  projects[[i]] <- parsed[[filenum]]                                                                                     
-  filenum <- filenum + 1                                                                                                 
-  while(filenum <= length(parsed) & substr(names(parsed)[filenum], 1, 8) == names(projects)[i]){                         
-    projects[[i]] <- rbind(projects[[i]], parsed[[filenum]])                                                             
-    filenum <- filenum + 1                                                                                               
-  }                                                                                                                      
+filenum <- 1
+for(i in 1:length(projects)){
+  projects[[i]] <- parsed[[filenum]]
+  filenum <- filenum + 1
+  while(filenum <= length(parsed) & substr(names(parsed)[filenum], 1, 8) == names(projects)[i]){
+    projects[[i]] <- rbind(projects[[i]], parsed[[filenum]])
+    filenum <- filenum + 1
+  }
 }                                                                                                                        
 
 # === EXTRACT NETWORKS ===                                                                                               
@@ -85,10 +94,10 @@ keptentities <- c("PERSON",
                   "LOC", "PRODUCT",                                                                                      
                   "EVENT", "WORK_OF_ART",                                                                                
                   "LAW", "LANGUAGE",                                                                                     
-                  "PARTIES")                                                                                             
+                  "PARTIES",'CUSTOM')                                                                                             
 
 for(m in 1:length(projects)){                                                                                            
-  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m], ".RDS")     
+  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m], "_V2.RDS")     
   if(overwrite == T | !file.exists(extract_file)){                                                                       
     extracts[[m]] <- textnet_extract(projects[[m]],                                                                      
                                      cl = 4,                                                                             
@@ -101,4 +110,4 @@ for(m in 1:length(projects)){
   }                                                                                                                      
 }                                                                                                                        
 
-saveRDS(object = extracts, file = "salinasbox/intermediate_data/raw_extracts.RDS")
+saveRDS(object = extracts, file = "salinasbox/intermediate_data/raw_extracts_V2.RDS")

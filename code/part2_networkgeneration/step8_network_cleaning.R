@@ -21,15 +21,18 @@
 #edgelist and has various quality control measures.
 
 manual_disambig = F
+overwrite = F
+
 library(stringr)
 library(textNet)
 library(data.table)
-myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T)
+myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
-names(myextracts) <- substr(list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=F),
-                            9,16)
+names(myextracts) <- str_extract(basename(myextractfiles),'[0-9]{8}_V2')
+  
+  
 #this helper function cleans the network. Any filtering steps to 
 #filter certain nodes/edges in the network can go here
 #if you want to save this intermediate file, save it to a new location and 
@@ -117,37 +120,47 @@ if(manual_disambig == T){
   }
   
   for(i in seq_along(myextracts)){
+    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
+    if(!overwrite && file.exists(outfile)){
+      message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
+      next
+    }
     currentgroupname <- groupids$Group.Name[which(groupids$EIS.Number == names(myextracts)[i])]
     #we want to filter for only rows that are relevant for this project group
-    current_manuals <- manual[str_squish(manual$Group.Name) == 
+    current_manuals <- manual[str_squish(manual$Group.Name) ==
                                 currentgroupname,]
     #now we combine the acronyms with the manual definitions to make
     #the to and from list that we put into the disambiguator
     if(length(current_manuals$from) > 0){
       from <- append(as.list(myacronyms[[i]]$from), as.list(current_manuals$from))
       to <- append(as.list(myacronyms[[i]]$to), stringr::str_split(current_manuals$to, "\\s*,\\s*"))
-      
+
     }else{
       from <- as.list(myacronyms[[i]]$from)
       to <- as.list(myacronyms[[i]]$to)
     }
     print(i)
     source("code/part2_networkgeneration/helpers/disambig_helper.R")
-    
-    saveRDS(cleaned_extract, paste0("salinasbox/clean_data/example_only_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS"))
+
+    saveRDS(cleaned_extract, outfile)
   }
 }else{
   for(i in seq_along(myextracts)){
-    #we just use the project-specific acronyms 
+    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
+    if(!overwrite && file.exists(outfile)){
+      message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
+      next
+    }
+    #we just use the project-specific acronyms
     #and agency names from the list of known agencies
-    #to make the to and from list 
+    #to make the to and from list
     #that we put into the disambiguator
     from <- as.list(myacronyms[[i]]$from)
     to <- as.list(myacronyms[[i]]$to)
     print(i)
     source("code/part2_networkgeneration/helpers/disambig_helper.R")
-    
-    saveRDS(cleaned_extract, paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS"))
+
+    saveRDS(cleaned_extract, outfile)
   }
 }
 
