@@ -5,11 +5,11 @@
 #Required setup: first set up symbolic link to Box of EPA documents as "repodocuments"
 #and set up symbolic link to salinas Box as "salinasbox"
 
-directory_to_search = "repodocuments/text_as_datatable"
+directory_to_search = "../eis_documents/enepa_repository/text_as_datatable"
 pdf_directory <- "repodocuments/documents"
 filelist <- list.files(directory_to_search, recursive = T)
 
-eisnums <- read.table(file = 'salinasbox/intermediate_data/solarwind_EISnumbers.txt', header = F)
+eisnums <- read.table(file = 'salinasbox/intermediate_data/solarwind_EISnumbers_V2.txt', header = F)
 
 basefiles <- basename(filelist)
 #only keep projects that include the EIS numbers we care about
@@ -48,7 +48,7 @@ failedfiles <- vector(mode = "character")
 for(i in pdfs) {
   if(file.exists(i)){
     #print(paste0("File ", i, "exists"))
-    file.copy(from = i, to = paste0("./salinasbox/intermediate_data/pdfs_before_appendix_removal/", basename(i)))
+    file.copy(from = i, to = paste0("salinasbox/intermediate_data/pdfs_before_appendix_removal/", basename(i)))
   }else{
     failedfiles <- append(failedfiles, i)
     print(paste0("File ", i, "does not exist"))
@@ -58,7 +58,7 @@ for(i in pdfs) {
 
 #this part is in case any files fail because they weren't found
 length(failedfiles)
-failedfiles <- stringr::str_remove(failedfiles, "repodocuments/documents/")
+failedfiles <- stringr::str_remove(failedfiles, "../eis_documents/enepa_repository/documents/")
 #use this to manually search for these pdfs and manually add them to the pdfs_before_appendix_removal repo
 failedfiles
 #most of the time the fail is just because of parentheses in the filename or 

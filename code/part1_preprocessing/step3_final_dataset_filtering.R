@@ -11,16 +11,18 @@
 #salinasbox/intermediate_data/appendix_removal/!README.docx
 #this led to the removal of one EIS number from the dataset due to lack of a 
 #clean pdf available for the plan.
+library(data.table)
+library(tidyverse)
+projects_all <- data.table(readRDS("salinasbox/solarwind_project_details_V2.RDS"))
+removethesenums <- projects_all$ceqNumber[
+  stringr::str_detect(projects_all$title, regex("(WITHDRAWN|PROGRAMMATIC)", ignore_case = T))]
 
-projects_all <- readRDS("salinasbox/solarwind_project_details.RDS") 
-removethesenums <- projects_all$EIS.Number[
-  stringr::str_detect(projects_all$EIS.Title, regex("(WITHDRAWN|PROGRAMMATIC)", ignore_case = T))]
 
 eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
 # get just EIS numbers 
 eis_numstoremove <- eis_pdfs[which(substr(eis_pdfs, 1, 8) %in% removethesenums)]
 #double check this looks right
-projects_all$EIS.Title[projects_all$EIS.Number %in% substr(eis_numstoremove, 1, 8)]
+projects_all$title[projects_all$ceqNumber %in% substr(eis_numstoremove, 1, 8)]
 
 #move those two files to the "delete" folder
 for(file in eis_numstoremove){
@@ -38,18 +40,18 @@ eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
 
 #one of these EIS numbers is a duplicate (grapevine final 20120181) from original rds file, so there are actually only 91 projects
-projects_done <- projects_all[projects_all$EIS.Number %in% eis_pdfs_nums,]
+projects_done <- projects_all[projects_all$ceqNumber %in% eis_pdfs_nums,]
 
 # ones that didn't make it, double check to make sure we didn't lose anything unexpectedly
-projs_not_in_done <- projects_all[!projects_all$EIS.Number %in% eis_pdfs_nums,]
+projs_not_in_done <- projects_all[!projects_all$ceqNumber %in% eis_pdfs_nums,]
 
 #let's make sure everything was filtered ok
 # this uses the symbolic link "repodocuments" to the enepa_repository Box folder 
-directory_to_search = "repodocuments/text_as_datatable"
-pdf_directory <- "repodocuments/documents"
+directory_to_search = "../eis_documents/enepea_repository/box_files/text_as_datatable"
+pdf_directory <- "../eis_documents/enepea_repository/box_files/documents"
 filelist <- list.files(directory_to_search, recursive = T)
 
-eisnums <- projs_not_in_done$EIS.Number
+eisnums <- projs_not_in_done$ceqNumber
 
 basefiles <- basename(filelist)
 #only keep projects that include the EIS numbers we care about
@@ -62,18 +64,24 @@ proj_basenames <- basename(matched_projects)
 #or the tracked changes file we removed (20150365)
 #or the withdrawn file (20210008)
 #
+
+
+matched_projects
 proj_basenames
 
 # create list of final EIS docs used for networks, join same projects together using groups.csv (created group names for draft/final of same project)
 groups <- read.csv("salinasbox/clean_data/GroupIDs.csv") %>%
-  select(EIS.Number, Group.Name)
+  rename(ceqNumber = EIS.Number) %>%
+  select(ceqNumber, Group.Name) %>%
+  mutate(ceqNumber = as.character(ceqNumber))
+colnames(projects_all)
 eis_networks <- projects_all %>%
-  select(EIS.Number, Title, Document.Type, State, Lead.Agency) %>%
-  filter(EIS.Number %in% eis_pdfs_nums) %>%
+  select(ceqNumber, title, type, primaryState, leadAgency) %>%
+  filter(ceqNumber %in% eis_pdfs_nums) %>%
   unique() %>%
-  mutate(Year = as.factor(substr(EIS.Number, 1, 4)),
-                 Project.Type = case_when(grepl("solar", Title, ignore.case = T) ~ "Solar",
-                                          grepl("wind", Title, ignore.case = T) ~ "Wind")) %>%
+  mutate(Year = as.factor(substr(ceqNumber, 1, 4)),
+                 Project.Type = case_when(grepl("solar", title, ignore.case = T) ~ "Solar",
+                                          grepl("wind", title, ignore.case = T) ~ "Wind")) %>%
   left_join(groups)
 
-write.csv(eis_networks, "salinasbox/clean_data/eis_info.csv", row.names = FALSE)
+write.csv(eis_networks, "salinasbox/clean_data/eis_info_V2.csv", row.names = FALSE)

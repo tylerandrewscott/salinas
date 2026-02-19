@@ -24,12 +24,13 @@ manual_disambig = F
 library(stringr)
 library(textNet)
 library(data.table)
-myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T)
+myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
-names(myextracts) <- substr(list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=F),
-                            9,16)
+names(myextracts) <- str_extract(basename(myextractfiles),'[0-9]{8}_V2')
+  
+  
 #this helper function cleans the network. Any filtering steps to 
 #filter certain nodes/edges in the network can go here
 #if you want to save this intermediate file, save it to a new location and 

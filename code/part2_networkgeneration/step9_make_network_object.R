@@ -26,7 +26,7 @@ filepath <- dplyr::case_when(
   T ~ NA
 )
 
-myextractfiles <- list.files(filepath, full.names=T)
+myextractfiles <- list.files(filepath, full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
@@ -36,9 +36,9 @@ network_graphs <- lapply(myextracts, function(i)
                    collapse_edges = !multiplex, self_loops = T)[[1]]})
 
 # match EIS numbers to network graphs
-extracts_names <- paste0("EIS_", (str_sub(basename(myextractfiles), -12, -5)))
+extracts_names <- paste0("EIS_", (str_extract(basename(myextractfiles),'^[0-9]{8}')))
 names(network_graphs) <- extracts_names
-saveRDS(network_graphs, "salinasbox/intermediate_data/network_graphs_all_entities.RDS")
+saveRDS(network_graphs, "salinasbox/intermediate_data/network_graphs_all_entities_V2.RDS")
 
 #here's the plot of the first EIS as an example
 #on a weighted network without isolates
