@@ -4,8 +4,9 @@
 # 
 
 overwrite <- F                                                                                                                                                                                               
-test <- F                                                                                                                                                                                                   
+test <- F
 
+source("code/config.R")
 library(textNet)                                                                                                                                                                                             
 library(spacyr)                                                                                                                                                                                              
 library(stringr)                                                                                                                                                                                             
@@ -23,9 +24,8 @@ ret_path <- grep('spacy-env',reticulate::conda_list()$python,value = T)
 # Setup: requires textNet, spaCy, python                                                                                 
 # if you want to overwrite file outputs, set overwrite to T                                                              
 
-files <- list.files(path = "salinasbox/clean_data/pdf_to_text_clean",                                                    
+files <- list.files(path = paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix),
                     pattern = ".RDS", full.names = T)                                                                    
-
 
 texts <- lapply(files, function(i){                                                                                      
   tmp <- readRDS(i)$text
@@ -44,7 +44,7 @@ parties <- c("Project", "Projects",
              "Tribe", "Tribes",                                                                                          
              "we", "We")                                                                                                 
 
-parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(files))                                   
+parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files", app_suffix, "/", basename(files))                                   
 
 ets <- read.csv('salinasbox/dictionary_data/final_acronym_dictionary.csv', header = T)         
 
@@ -67,7 +67,7 @@ parsed <- textNet::parse_text_trf(ret_path,
 
 # === GROUP BY EIS NUMBER ===
 # Load all parsed docs from parquet (saved by parse_text_trf)
-parsed_files <- list.files("salinasbox/intermediate_data/parsed_files", pattern = "\\.parquet$", full.names = TRUE)
+parsed_files <- list.files(paste0("salinasbox/intermediate_data/parsed_files", app_suffix), pattern = "\\.parquet$", full.names = TRUE)
 parsed <- lapply(parsed_files, textNet::read_parsed_trf)
 names(parsed) <- basename(parsed_files)
 
@@ -97,7 +97,7 @@ keptentities <- c("PERSON",
                   "PARTIES",'CUSTOM')                                                                                             
 
 for(m in 1:length(projects)){                                                                                            
-  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m], "_V2.RDS")     
+  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix, "/extract_", names(projects)[m], "_V2.RDS")     
   if(overwrite == T | !file.exists(extract_file)){                                                                       
     extracts[[m]] <- textnet_extract(projects[[m]],                                                                      
                                      cl = 4,                                                                             
@@ -110,4 +110,4 @@ for(m in 1:length(projects)){
   }                                                                                                                      
 }                                                                                                                        
 
-saveRDS(object = extracts, file = "salinasbox/intermediate_data/raw_extracts_V2.RDS")
+saveRDS(object = extracts, file = paste0("salinasbox/intermediate_data/raw_extracts_V2", app_suffix, ".RDS"))

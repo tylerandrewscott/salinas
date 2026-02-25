@@ -1,7 +1,11 @@
 #Purpose: This script is a process check to make sure the page count
-#for the clean files looks good. 
+#for the clean files looks good.
 
 #Setup: None
+
+source("code/config.R")
+
+if (RUN_PAGE_COUNT_CHECK) {
 
 packages <- c("pdftools", "data.table", "stringr")
 
@@ -14,9 +18,13 @@ for (pkg in packages) {
   library(pkg, character.only = TRUE)
 }
 
-pdf_directory <- "salinasbox/intermediate_data/appendix_removal/done"
-raw_text_directory <- "salinasbox/intermediate_data/pdf_to_text_raw"
-clean_text_directory <- "salinasbox/clean_data/pdf_to_text_clean"
+pdf_directory <- if (INCLUDE_APPENDICES) {
+  "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+} else {
+  "salinasbox/intermediate_data/appendix_removal/done"
+}
+raw_text_directory <- paste0("salinasbox/intermediate_data/pdf_to_text_raw", app_suffix)
+clean_text_directory <- paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix)
 
 pdf_files <- list.files(pdf_directory, pattern = "\\.pdf$", full.names = TRUE)
 pdf_info_list <- lapply(pdf_files, pdf_info)
@@ -64,5 +72,7 @@ result_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
-saveRDS(result_df, "salinasbox/clean_data/page_count_comparison.RDS")
+saveRDS(result_df, paste0("salinasbox/clean_data/page_count_comparison", app_suffix, ".RDS"))
 View(result_df)
+
+} # end RUN_PAGE_COUNT_CHECK

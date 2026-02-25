@@ -4,8 +4,7 @@
 #set-up: decide whether clobber is true or false,
 #depending on whether you want to force overwrite files
 CLOBBER <- FALSE  # Set this to TRUE if you want to overwrite existing txt files
-
-
+source("code/config.R")
 packages <- c("pdftools", "data.table", "tesseract")
 
 installed_packages <- rownames(installed.packages())
@@ -17,11 +16,15 @@ for (pkg in packages) {
   library(pkg, character.only = TRUE)
 }
 # PATH TO PDF FILES
-pdf_file_directory <- "salinasbox/intermediate_data/appendix_removal/done"
+pdf_file_directory <- if (INCLUDE_APPENDICES) {
+  "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+} else {
+  "salinasbox/intermediate_data/appendix_removal/done"
+}
 
 # We make a _raw_ conversion directory
 # Next script then does filtering to a cleaned directory
-txt_file_directory <- "salinasbox/intermediate_data/pdf_to_text_raw"
+txt_file_directory <- paste0("salinasbox/intermediate_data/pdf_to_text_raw", app_suffix)
 
 if (!dir.exists(txt_file_directory)) {
   dir.create(txt_file_directory)

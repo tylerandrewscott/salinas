@@ -1,7 +1,8 @@
+source("code/config.R")
 library(igraph)
 library(stringr)
 
-network_graphs <- readRDS("salinasbox/intermediate_data/network_graphs_all_entities.RDS")
+network_graphs <- readRDS(paste0("salinasbox/intermediate_data/network_graphs_all_entities_V2", app_suffix, ".RDS"))
 # want to filter for certain entity types, remove isolates, and clean up some nodes
 filtered_networks <- lapply(network_graphs, function(network) {
   # only keep entity types we want
@@ -38,11 +39,11 @@ filtered_networks <- filtered_networks[order(names(filtered_networks))]
 
 # manually remove networks for docs we removed after fixing preprocessing code (step3) to get final sample
 network_nums <- stringr::str_extract(names(filtered_networks), "\\d{8}$")
-eis_info <- read.csv("salinasbox/clean_data/eis_info.csv")
-final_nums <- as.character(eis_info$EIS.Number)
+eis_info <- read.csv("salinasbox/clean_data/eis_info_V2.csv")
+final_nums <- as.character(eis_info$ceqNumber)
 filtered_networks <- filtered_networks[network_nums %in% final_nums]
 
-saveRDS(filtered_networks, "salinasbox/clean_data/filtered_networks.RDS")
+saveRDS(filtered_networks, paste0("salinasbox/clean_data/filtered_networks", app_suffix, ".RDS"))
 
 
 ## old network graph ex

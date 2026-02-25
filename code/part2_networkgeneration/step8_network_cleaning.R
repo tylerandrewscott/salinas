@@ -23,10 +23,12 @@
 manual_disambig = F
 overwrite = F
 
+source("code/config.R")
+
 library(stringr)
 library(textNet)
 library(data.table)
-myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T,pattern = 'V2')
+myextractfiles <- list.files(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix), full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
@@ -120,7 +122,7 @@ if(manual_disambig == T){
   }
   
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
+    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
@@ -146,7 +148,7 @@ if(manual_disambig == T){
   }
 }else{
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
+    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
