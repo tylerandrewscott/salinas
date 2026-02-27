@@ -1,7 +1,11 @@
 library(data.table)
 library(stringr)
-myfiles <- list.files("salinasbox/clean_data/pdf_to_text_clean")
-rawfiles <- list.files("salinasbox/intermediate_data/pdf_to_text_raw")
+myfiles <- list.files(paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix))
+all_rawfiles <- list.files(paste0("salinasbox/intermediate_data/pdf_to_text_raw", app_suffix))
+# filter raw files to only those with a matching clean file (some may have been
+# skipped in step 5 due to having no usable text)
+clean_basenames <- str_replace(myfiles, "\\.RDS$", "")
+rawfiles <- all_rawfiles[str_replace(all_rawfiles, "\\.txt$", "") %in% clean_basenames]
 
 eis_nums <- unique(substr(myfiles, 1, 8))
 mytexts <- vector(mode = "list", length = length(eis_nums))
@@ -14,19 +18,19 @@ names(mytexts) <- eis_nums
 filenum = 1
 for(i in 1:length(mytexts)){
   mytexts[[i]] <- readRDS(paste0(
-    "salinasbox/clean_data/pdf_to_text_clean/", myfiles[filenum]))$text
+    "salinasbox/clean_data/pdf_to_text_clean", app_suffix, "/", myfiles[filenum]))$text
   rawtexts[[i]] <- fread(paste0(
-    "salinasbox/intermediate_data/pdf_to_text_raw/", rawfiles[filenum]))$text
+    "salinasbox/intermediate_data/pdf_to_text_raw", app_suffix, "/", rawfiles[filenum]), fill = TRUE)$text
   filenum = filenum + 1
   while(filenum <= length(myfiles) & substr(myfiles[filenum], 1, 8) == eis_nums[i]){
     mytexts[[i]] <- append(mytexts[[i]], 
                            readRDS(paste0(
-                             "salinasbox/clean_data/pdf_to_text_clean/", 
+                             "salinasbox/clean_data/pdf_to_text_clean", app_suffix, "/",
                              myfiles[filenum]))$text)
-    rawtexts[[i]] <- append(rawtexts[[i]], 
+    rawtexts[[i]] <- append(rawtexts[[i]],
                            fread(paste0(
-                             "salinasbox/intermediate_data/pdf_to_text_raw/", 
-                             rawfiles[filenum]))$text)
+                             "salinasbox/intermediate_data/pdf_to_text_raw", app_suffix, "/",
+                             rawfiles[filenum]), fill = TRUE)$text)
     filenum = filenum + 1
   }
 }
@@ -44,4 +48,4 @@ for(i in 1:length(myacronyms)){
   #can't accept one acronym going to multiple contradicting "to" nodes, so we filter duplicates
   myacronyms[[i]] <- myacronyms[[i]][!duplicated(myacronyms[[i]]$acronym),]
 }
-saveRDS(myacronyms, "salinasbox/intermediate_data/project_specific_acronyms.RDS")
+saveRDS(myacronyms, paste0("salinasbox/intermediate_data/project_specific_acronyms", app_suffix, ".RDS"))

@@ -8,10 +8,11 @@
 #Set-up: Decide whether clobber (overwrite files) = T or F.
 #Also, there are a few quality tests to verify header/footer removal functionality
 #To run these, set runtests = T and visually inspect the output
-CLOBBER <- T
+CLOBBER <- F
 runtests <- F
 
 source("code/config.R")
+if (OVERWRITE_ALL) CLOBBER <- TRUE
 
 packages <- c("data.table", "stringr", "dplyr")
 installed_packages <- rownames(installed.packages())

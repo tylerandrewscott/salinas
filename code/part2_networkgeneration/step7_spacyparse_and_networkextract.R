@@ -3,10 +3,11 @@
 # 
 # 
 
-overwrite <- F                                                                                                                                                                                               
+overwrite <- F
 test <- F
 
 source("code/config.R")
+if (OVERWRITE_ALL) overwrite <- TRUE
 library(textNet)                                                                                                                                                                                             
 library(spacyr)                                                                                                                                                                                              
 library(stringr)                                                                                                                                                                                             
@@ -27,22 +28,32 @@ ret_path <- grep('spacy-env',reticulate::conda_list()$python,value = T)
 files <- list.files(path = paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix),
                     pattern = ".RDS", full.names = T)                                                                    
 
-texts <- lapply(files, function(i){                                                                                      
+texts <- lapply(files, function(i){
   tmp <- readRDS(i)$text
   tmp <- str_replace_all(tmp,'\\n',' ')
   tmp <- tmp[!is.na(tmp)&nchar(tmp)>200]
   tmp
-})                                                                                                                       
-names(texts) <- basename(files)                                                                                          
+})
+names(texts) <- basename(files)
 
-parties <- c("Project", "Projects",                                                                                      
-             "Applicant", "Applicants",                                                                                  
-             "Permittee", "Permittees",                                                                                  
-             "Proponent", "Proponents",                                                                                  
-             "Band", "Bands",                                                                                            
-             "tribe", "tribes",                                                                                          
-             "Tribe", "Tribes",                                                                                          
-             "we", "We")                                                                                                 
+# remove files with no usable text to keep texts and parse_fileloc aligned
+# (parse_text_trf skips empty texts but doesn't skip the corresponding filename)
+empty_texts <- sapply(texts, length) == 0
+if (any(empty_texts)) {
+  message("Removing ", sum(empty_texts), " file(s) with no text >200 chars: ",
+          paste(basename(files[empty_texts]), collapse = ", "))
+  files <- files[!empty_texts]
+  texts <- texts[!empty_texts]
+}
+
+parties <- c("Project", "Projects",
+             "Applicant", "Applicants",
+             "Permittee", "Permittees",
+             "Proponent", "Proponents",
+             "Band", "Bands",
+             "tribe", "tribes",
+             "Tribe", "Tribes",
+             "we", "We")
 
 parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files", app_suffix, "/", basename(files))                                   
 
@@ -56,14 +67,14 @@ dict_ents <- entity_specify(unique(ets$clean), case_sensitive = T, whole_word_on
 
 # === RUN PARSING ===                                                                                                    
 parsed <- textNet::parse_text_trf(ret_path,                                                                                  
-                              text_list = texts,                                                                      
-                              parsed_filenames = parse_fileloc,                                                          
-                              overwrite = overwrite,                                                                     
-                              test = test,                                                               
-                              entity_ruler_patterns = dict_ents,                                                         
-                              overwrite_ents = T,                                                                        
-                              ruler_position = 'after',                                                                  
-                              custom_entities = list(PARTIES = parties))                                                 
+                                  text_list = texts,                                                                      
+                                  parsed_filenames = parse_fileloc,                                                          
+                                  overwrite = overwrite,                                                                     
+                                  test = test,                                                               
+                                  entity_ruler_patterns = dict_ents,                                                         
+                                  overwrite_ents = T,                                                                        
+                                  ruler_position = 'after',                                                                  
+                                  custom_entities = list(PARTIES = parties))                                                 
 
 # === GROUP BY EIS NUMBER ===
 # Load all parsed docs from parquet (saved by parse_text_trf)
@@ -96,11 +107,12 @@ keptentities <- c("PERSON",
                   "LAW", "LANGUAGE",                                                                                     
                   "PARTIES",'CUSTOM')                                                                                             
 
+dir.create(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix))
 for(m in 1:length(projects)){                                                                                            
   extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix, "/extract_", names(projects)[m], "_V2.RDS")     
   if(overwrite == T | !file.exists(extract_file)){                                                                       
     extracts[[m]] <- textnet_extract(projects[[m]],                                                                      
-                                     cl = 4,                                                                             
+                                     cl = 1,                                                                             
                                      keep_entities = keptentities,                                                       
                                      return_to_memory = T,                                                               
                                      keep_incomplete_edges = T,                                                          

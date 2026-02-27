@@ -45,24 +45,24 @@ filtered_networks <- filtered_networks[network_nums %in% final_nums]
 
 saveRDS(filtered_networks, paste0("salinasbox/clean_data/filtered_networks", app_suffix, ".RDS"))
 
-
-## old network graph ex
-ggraph(network_graphs[[1]], layout = "fr") +
-  geom_edge_fan(aes(alpha = weight),
-                end_cap = circle(1, "mm"),
-                color = "#000000",
-                width = 0.3,
-                arrow = arrow(angle = 15, length = unit(0.07, "inches"), ends = "last", type = "closed"))+
-  geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
-  labs(title = "Example Network Plot") + theme_void()
-
-## filtered network graph example
-ggraph(filtered_networks[[1]], layout = "fr") +
-  geom_edge_fan(aes(alpha = weight),
-                end_cap = circle(1, "mm"),
-                color = "#000000",
-                width = 0.3,
-                arrow = arrow(angle = 15, length = unit(0.07, "inches"), ends = "last", type = "closed"))+
-  geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
-  labs(title = "Example Network Plot") + theme_void()
+# 
+# ## old network graph ex
+# ggraph(network_graphs[[1]], layout = "fr") +
+#   geom_edge_fan(aes(alpha = weight),
+#                 end_cap = circle(1, "mm"),
+#                 color = "#000000",
+#                 width = 0.3,
+#                 arrow = arrow(angle = 15, length = unit(0.07, "inches"), ends = "last", type = "closed"))+
+#   geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
+#   labs(title = "Example Network Plot") + theme_void()
+# 
+# ## filtered network graph example
+# ggraph(filtered_networks[[1]], layout = "fr") +
+#   geom_edge_fan(aes(alpha = weight),
+#                 end_cap = circle(1, "mm"),
+#                 color = "#000000",
+#                 width = 0.3,
+#                 arrow = arrow(angle = 15, length = unit(0.07, "inches"), ends = "last", type = "closed"))+
+#   geom_node_point(aes(color = entity_type, size = num_appearances),  alpha = 0.6) +
+#   labs(title = "Example Network Plot") + theme_void()
 

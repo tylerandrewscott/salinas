@@ -5,6 +5,7 @@
 #depending on whether you want to force overwrite files
 CLOBBER <- FALSE  # Set this to TRUE if you want to overwrite existing txt files
 source("code/config.R")
+if (OVERWRITE_ALL) CLOBBER <- TRUE
 packages <- c("pdftools", "data.table", "tesseract")
 
 installed_packages <- rownames(installed.packages())

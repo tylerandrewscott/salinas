@@ -1,11 +1,19 @@
-cleanextractfiles <- list.files("salinasbox/clean_data/minimalist_cleaned_networks", pattern = "cleanedextract", full.names=T)
+cleanextractfiles <- list.files(paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix), pattern = "cleanedextract", full.names=T)
 cleanextracts <- vector(mode = "list", length = length(cleanextractfiles))
-cleanextracts <- lapply(cleanextractfiles, 
+cleanextracts <- lapply(cleanextractfiles,
                      function(i) readRDS(i))
-names(cleanextracts) <- substr(list.files("salinasbox/clean_data/minimalist_cleaned_networks", pattern = "cleanedextract", full.names=F),
+names(cleanextracts) <- substr(list.files(paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix), pattern = "cleanedextract", full.names=F),
                             16,23)
 
 library(data.table)
+# skip extracts with empty edge lists
+valid <- sapply(cleanextracts, function(i) {
+  !is.null(i$edgelist) && is.data.frame(i$edgelist) && nrow(i$edgelist) > 0
+})
+if (any(!valid)) message("Skipping ", sum(!valid), " extract(s) with no edges: ",
+                         paste(names(cleanextracts)[!valid], collapse = ", "))
+cleanextracts <- cleanextracts[valid]
+
 network_graphs <- lapply(cleanextracts, function(i)
   {export_to_network(i, "igraph", keep_isolates = T,
                      collapse_edges = F, self_loops = T)[[1]]})
@@ -22,4 +30,4 @@ top_entities <- top_entities[top_entities$index <= 25,]
 #remove temp column
 top_entities$index <- NULL
 colnames(top_entities)[colnames(top_entities)=="avg_fract_of_a_doc"] <- "fraction_of_doc"
-write.csv(top_entities, "salinasbox/clean_data/top_entities.csv")
+write.csv(top_entities, paste0("salinasbox/clean_data/top_entities", app_suffix, ".csv"))
