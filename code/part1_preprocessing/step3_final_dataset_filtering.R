@@ -11,6 +11,7 @@
 #salinasbox/intermediate_data/appendix_removal/!README.docx
 #this led to the removal of one EIS number from the dataset due to lack of a 
 #clean pdf available for the plan.
+source("code/config.R")
 library(data.table)
 library(tidyverse)
 projects_all <- data.table(readRDS("salinasbox/solarwind_project_details_V2.RDS"))
@@ -18,23 +19,31 @@ removethesenums <- projects_all$ceqNumber[
   stringr::str_detect(projects_all$title, regex("(WITHDRAWN|PROGRAMMATIC)", ignore_case = T))]
 
 
-eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
-# get just EIS numbers 
+pdf_input_dir <- if (INCLUDE_APPENDICES) {
+  "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+} else {
+  "salinasbox/intermediate_data/appendix_removal/done"
+}
+
+eis_pdfs <- list.files(pdf_input_dir)
+# get just EIS numbers
 eis_numstoremove <- eis_pdfs[which(substr(eis_pdfs, 1, 8) %in% removethesenums)]
 #double check this looks right
 projects_all$title[projects_all$ceqNumber %in% substr(eis_numstoremove, 1, 8)]
 
 #move those two files to the "delete" folder
-for(file in eis_numstoremove){
-  file.copy(from = paste0("salinasbox/intermediate_data/appendix_removal/done/",
-                          file), to = paste0("./salinasbox/intermediate_data/appendix_removal/delete/", file))
-  file.remove(paste0("salinasbox/intermediate_data/appendix_removal/done/",
-                     file))
-  
+#skip file moves when using original PDFs to avoid modifying the shared source directory
+if (!INCLUDE_APPENDICES) {
+  for(file in eis_numstoremove){
+    file.copy(from = paste0(pdf_input_dir, "/",
+                            file), to = paste0("./salinasbox/intermediate_data/appendix_removal/delete/", file))
+    file.remove(paste0(pdf_input_dir, "/",
+                       file))
+  }
 }
 
 #now query database again
-eis_pdfs <- list.files("salinasbox/intermediate_data/appendix_removal/done")
+eis_pdfs <- list.files(pdf_input_dir)
 # get just EIS numbers 
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))
 # matches
@@ -46,8 +55,7 @@ projects_done <- projects_all[projects_all$ceqNumber %in% eis_pdfs_nums,]
 projs_not_in_done <- projects_all[!projects_all$ceqNumber %in% eis_pdfs_nums,]
 
 #let's make sure everything was filtered ok
-# this uses the symbolic link "repodocuments" to the enepa_repository Box folder 
-directory_to_search = "../eis_documents/enepea_repository/box_files/text_as_datatable"
+directory_to_search = "../eis_documents/enepa_repository/box_files/text_as_datatable"
 pdf_directory <- "../eis_documents/enepea_repository/box_files/documents"
 filelist <- list.files(directory_to_search, recursive = T)
 
@@ -66,12 +74,9 @@ proj_basenames <- basename(matched_projects)
 #
 
 
-matched_projects
-proj_basenames
-
 # create list of final EIS docs used for networks, join same projects together using groups.csv (created group names for draft/final of same project)
 groups <- read.csv("salinasbox/clean_data/GroupIDs.csv") %>%
-  rename(ceqNumber = EIS.Number) %>%
+  #rename(ceqNumber = EIS.Number) %>%
   select(ceqNumber, Group.Name) %>%
   mutate(ceqNumber = as.character(ceqNumber))
 colnames(projects_all)

@@ -2,11 +2,11 @@
 #This script finds pdfs in the repo that match the EIS numbers from step 1.
 #It copies those pdfs to salinasbox, excluding any EPA comment letters and appendices
 
-#Required setup: first set up symbolic link to Box of EPA documents as "repodocuments"
+#Required setup: first set up symbolic link to Box of EPA documents
 #and set up symbolic link to salinas Box as "salinasbox"
 
-directory_to_search = "../eis_documents/enepa_repository/text_as_datatable"
-pdf_directory <- "repodocuments/documents"
+directory_to_search = "../eis_documents/enepa_repository/box_files/text_as_datatable"
+pdf_directory <- "../eis_documents/enepa_repository/box_files/documents"
 filelist <- list.files(directory_to_search, recursive = T)
 
 eisnums <- read.table(file = 'salinasbox/intermediate_data/solarwind_EISnumbers_V2.txt', header = F)
@@ -43,8 +43,16 @@ noapps[stringr::str_detect(proj_basenames, "EPA") | stringr::str_detect(proj_bas
 noapps <- noapps[!stringr::str_detect(proj_basenames, "(?<!forPublic)Comment")]
 
 proj_basenames <- stringr::str_remove(basename(noapps), ".txt$")
+
+### note that when these files are saved, I removed all "&" and ")" or "(" characters from the file names
+proj_basenames <- str_remove_all(proj_basenames,'\\&|\\)|\\(')
+### likewise, all double + "__" are condensed to "_"
+proj_basenames <- str_replace_all(proj_basenames,"_{2,}","_")
+
+
 pdfs <- paste0(pdf_directory, "/", dirname(noapps), "/", proj_basenames, ".pdf")
 failedfiles <- vector(mode = "character")
+
 for(i in pdfs) {
   if(file.exists(i)){
     #print(paste0("File ", i, "exists"))

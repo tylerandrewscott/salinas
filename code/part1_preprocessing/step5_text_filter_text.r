@@ -8,8 +8,11 @@
 #Set-up: Decide whether clobber (overwrite files) = T or F.
 #Also, there are a few quality tests to verify header/footer removal functionality
 #To run these, set runtests = T and visually inspect the output
-CLOBBER <- T
-runtests = F
+CLOBBER <- F
+runtests <- F
+
+source("code/config.R")
+if (OVERWRITE_ALL) CLOBBER <- TRUE
 
 packages <- c("data.table", "stringr", "dplyr")
 installed_packages <- rownames(installed.packages())
@@ -22,9 +25,9 @@ for (pkg in packages) {
 
 source("code/part1_preprocessing/helpers/headfootremove.R")
 
-raw_txt_file_location <- "salinasbox/intermediate_data/pdf_to_text_raw"
+raw_txt_file_location <- paste0("salinasbox/intermediate_data/pdf_to_text_raw", app_suffix)
 
-cleaned_txt_file_location <- "salinasbox/clean_data/pdf_to_text_clean"
+cleaned_txt_file_location <- paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix)
 if (!dir.exists(cleaned_txt_file_location)) {
   dir.create(cleaned_txt_file_location)
 }
@@ -44,13 +47,22 @@ data <- vector(mode = "list", length = length(raw_files))
 dataraw <- vector(mode = "list", length = length(raw_files))
 dataintermed <- vector(mode = "list", length = length(raw_files))
 for (x in seq_along(raw_files)) {
-  
+  #print(x)
   cleaned_file <- file.path(cleaned_txt_file_location, 
                             stringr::str_replace(basename(raw_files[x]), ".txt$", ".RDS"))
   if (CLOBBER || !file.exists(cleaned_file)) {
-    data[[x]] <- fread(raw_files[x])
-    dataintermed[[x]] <- fread(raw_files[x])
-    dataraw[[x]] <- fread(raw_files[x])
+    data[[x]] <- fread(raw_files[x], fill = TRUE)
+    dataintermed[[x]] <- fread(raw_files[x], fill = TRUE)
+    dataraw[[x]] <- fread(raw_files[x], fill = TRUE)
+
+    # skip files with no text column or no usable content
+    if (is.null(data[[x]]$text) || nrow(data[[x]]) == 0 ||
+        !any(nchar(data[[x]]$text) > 0, na.rm = TRUE)) {
+      message("Skipping ", basename(raw_files[x]), " - no readable text content")
+      data[[x]] <- NULL
+      next
+    }
+
     # Calculate total characters for each text entry once
     total_characters <- nchar(data[[x]]$text)
      
@@ -89,13 +101,21 @@ for (x in seq_along(raw_files)) {
       T ~ data[[x]]$text
     )
     print(raw_files[x])
+
+    # skip files that have no usable text after filtering
+    if (!any(nchar(data[[x]]$text) > 0, na.rm = TRUE)) {
+      message("Skipping ", basename(raw_files[x]), " - no text remaining after filtering")
+      data[[x]] <- NULL
+      next
+    }
+
     dataintermed[[x]]$text <- data[[x]]$text
     data[[x]]$text <- headfootremove(data[[x]]$text)
     
     #removal of certain pages as described in salinasbox/intermediate_data/appendix_removal/!README.docx
     #remove page 214 onward of the 20140004_Fowler_Ridge_Wind_Farm_Final_EIS_010714
-    #since it is appendices
-    if(basename(raw_files[x]) == "20140004_Fowler_Ridge_Wind_Farm_Final_EIS_010714.txt"){
+    #since it is appendices (only when using appendix-removed PDFs)
+    if(!INCLUDE_APPENDICES && basename(raw_files[x]) == "20140004_Fowler_Ridge_Wind_Farm_Final_EIS_010714.txt"){
       data[[x]] <- data[[x]][1:213,]
     }
     #keep in RDS rather than txt for encoding ease
@@ -103,7 +123,7 @@ for (x in seq_along(raw_files)) {
     saveRDS(object = data[[x]], file = cleaned_file)
   }
 }
-saveRDS(object = data, file = "salinasbox/clean_data/all_clean_texts_pregrouping.RDS")
+saveRDS(object = data, file = paste0("salinasbox/clean_data/all_clean_texts_pregrouping", app_suffix, ".RDS"))
 
 #the rest of this script consists of tests to verify
 #quality of the header/footer removal
