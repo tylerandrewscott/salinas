@@ -6,11 +6,11 @@ network_graphs <- readRDS(paste0("salinasbox/intermediate_data/network_graphs_al
 # want to filter for certain entity types, remove isolates, and clean up some nodes
 filtered_networks <- lapply(network_graphs, function(network) {
   # only keep entity types we want
-  keep_entities <- c("PERSON", "ORG", "GPE", "PARTIES")
+  keep_entities <- c("PERSON", "ORG", "GPE", "PARTIES", "CUSTOM")
   filtered <- induced_subgraph(network, V(network)[vertex_attr(network,"entity_type") %in% keep_entities])
   # remove isolates
   isolates <- which(igraph::degree(filtered) == 0)
-  no_isolates <- igraph::delete.vertices(filtered, isolates)
+  no_isolates <- igraph::delete_vertices(filtered, isolates)
   # clean nodes up
   keep_abbvs <- tolower(c(state.abb, "US", "DC"))
   drop_weird <- c("ghg", "llc", "limited_liability_corporation", "dba")
@@ -19,23 +19,15 @@ filtered_networks <- lapply(network_graphs, function(network) {
   return(clean_nodes)
 })
 
-# associate networks with group ID to link related projects and add to network object name
+# associate networks with group ID to link related projects
 groups <- read.csv("salinasbox/clean_data/GroupIDs.csv")
-new_names <- names(filtered_networks) # initialize vector to replace with new names
 for (i in seq_along(filtered_networks)) {
   eis <- names(filtered_networks)[i]
   eis_num <- sub("EIS_", "", eis) # get rid of "EIS_" so just number to match on
-  matches <- match(eis_num, groups$EIS.Number) # get index of matches
-  if(!is.na(matches)) {
-    attr(filtered_networks[[i]], "group") <- groups$Group.Name[matches] # make attribute for group name
-  }
-  if (!is.na(attr(filtered_networks[[i]], "group")) && !is.null(attr(filtered_networks[[i]], "group"))) {
-    new_names[i] <- paste0(attr(filtered_networks[[i]], "group"), "_", eis_num) # make vector of new names with _group added
-  } 
+  matched_group <- groups$Group.Name[eis_num == groups$ceqNumber]
+  filtered_networks[[i]]$group <- ifelse(length(matched_group) != 0, matched_group, NA)
 }
-# assign new names
-names(filtered_networks) <- new_names
-filtered_networks <- filtered_networks[order(names(filtered_networks))]
+
 
 # manually remove networks for docs we removed after fixing preprocessing code (step3) to get final sample
 network_nums <- stringr::str_extract(names(filtered_networks), "\\d{8}$")
