@@ -37,7 +37,7 @@ network_graphs <- lapply(myextracts, function(i)
                    collapse_edges = !multiplex, self_loops = T)[[1]]})
 
 # match EIS numbers to network graphs
-extracts_names <- paste0("EIS_", (str_extract(basename(myextractfiles),'^[0-9]{8}')))
+extracts_names <- paste0("EIS_", (str_extract(basename(myextractfiles),'[0-9]{8}')))
 names(network_graphs) <- extracts_names
 saveRDS(network_graphs, paste0("salinasbox/intermediate_data/network_graphs_all_entities_V2", app_suffix, ".RDS"))
 
