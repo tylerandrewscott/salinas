@@ -1,6 +1,6 @@
 #Purpose: We used this script to generate our project-specific dataset.
 #This script finds pdfs in the repo that match the EIS numbers from step 1.
-#It copies those pdfs to salinasbox, excluding any EPA comment letters and appendices
+#It copies those pdfs to salinasbox, excluding any EPA comment letters
 
 #Required setup: first set up symbolic link to Box of EPA documents
 #and set up symbolic link to salinas Box as "salinasbox"
@@ -16,33 +16,24 @@ basefiles <- basename(filelist)
 matched_projects <- filelist[stringr::str_detect(basefiles, paste0(eisnums$V1, collapse = "|"))]
 proj_basenames <- basename(matched_projects)
 
-#get rid of EPA comment letters, which are of the form EISnum_EISnum.txt or EISnum_EISnumtt.txt
-matched_projects <- matched_projects[!stringr::str_detect(proj_basenames, 
-                                                          paste0("^(", paste0(eisnums$V1, collapse = "|"), ")_", 
-                                                                "(", paste0(eisnums$V1, collapse = "|"), ")(t*|_DEIS_CVOW).txt"))]
-proj_basenames <- basename(matched_projects)
-#sometimes EPA comment letters have the phrase "EPA_comments". Remove these (but recommended to check first to make sure the file doesn't say 'with EPA comments')
-matched_projects <- matched_projects[!stringr::str_detect(proj_basenames, 
-                                                          paste0("EPA_(C|c)omments"))]
-proj_basenames <- basename(matched_projects)
-#remove files that are labeled as appendices, except keep them if they say 'with' or 'and' appendix
-noapps <- matched_projects[stringr::str_detect(matched_projects, "(with|and)_*(a|A)ppendi") |
-  !stringr::str_detect(proj_basenames, "(A|a)ppendix|(A|a)ppendices|_App_*[A-Z]")]
-proj_basenames <- basename(noapps)
+# Filter comment letters using API metadata rather than filename heuristics.
+# The metadata type == "Comment_Letter" covers all comment letters for our EIS
+# numbers. Text file basenames are reconstructed from fileNameForDownload using
+# the same normalizations applied when the repo was built (spaces -> _, remove
+# &/(/), condense __).
+doc_meta <- arrow::read_parquet('../eis_documents/enepa_repository/metadata/eis_document_record_api.parquet')
+comment_letters <- doc_meta[doc_meta$type == 'Comment_Letter' &
+                              doc_meta$ceqNumber %in% eisnums$V1, ]
+cl_stems <- tools::file_path_sans_ext(comment_letters$fileNameForDownload)
+cl_stems <- gsub(" ", "_", cl_stems)
+cl_stems <- gsub("[&)(]", "", cl_stems)
+cl_stems <- gsub("_{2,}", "_", cl_stems)
+cl_basenames <- paste0(comment_letters$ceqNumber, "_", cl_stems, ".txt")
 
-#let's inspect the few documents that include "EPA" or "Comments" to see if they are comment letters:
-noapps[stringr::str_detect(proj_basenames, "EPA") | stringr::str_detect(proj_basenames, "(C|c)omment")]
-#EIS number 20130268 responses to comments should be removed since it is not listed in the main EIS table of contents,
-#which means it's not a main plan part.
-#EIS number 20200022 should be removed since it is Appendix T
-#EIS number 20210038 should NOT be removed since it is a full EIS draft
-#EIS numbers 20210155, 20220056, 20220084, 20220171, and 20220186 are comment letters and 
-#should be removed
-#this desired filtering can be achieved by keeping "forpubliccomment" and 
-#removing other instances of "comment" like so:
-noapps <- noapps[!stringr::str_detect(proj_basenames, "(?<!forPublic)Comment")]
+matched_projects <- matched_projects[!proj_basenames %in% cl_basenames]
+proj_basenames   <- basename(matched_projects)
 
-proj_basenames <- stringr::str_remove(basename(noapps), ".txt$")
+proj_basenames <- stringr::str_remove(proj_basenames, ".txt$")
 
 ### note that when these files are saved, I removed all "&" and ")" or "(" characters from the file names
 proj_basenames <- str_remove_all(proj_basenames,'\\&|\\)|\\(')
@@ -50,7 +41,7 @@ proj_basenames <- str_remove_all(proj_basenames,'\\&|\\)|\\(')
 proj_basenames <- str_replace_all(proj_basenames,"_{2,}","_")
 
 
-pdfs <- paste0(pdf_directory, "/", dirname(noapps), "/", proj_basenames, ".pdf")
+pdfs <- paste0(pdf_directory, "/", dirname(matched_projects), "/", proj_basenames, ".pdf")
 failedfiles <- vector(mode = "character")
 
 for(i in pdfs) {
