@@ -63,7 +63,11 @@ ets <- ets[!grepl('\\:', ets$name), ]
 ets <- ets[!sapply(ets$acronym,PeriodicTable::isSymb),]
 ets$clean <- stringr::str_replace_all(ets$name,'_',' ')
 
-dict_ents <- entity_specify(unique(ets$clean), case_sensitive = T, whole_word_only = T)                                     
+dict_ents <- entity_specify(unique(ets$clean), case_sensitive = T,
+                            whole_word_only = T, entity_label = "DICT")
+
+# append structural patterns (label = "PATTERN")
+dict_ents <- c(dict_ents, textNet::build_structural_org_patterns())                                     
 
 # === RUN PARSING ===                                                                                                    
 parsed <- textNet::parse_text_trf(ret_path,                                                                                  
@@ -105,7 +109,7 @@ keptentities <- c("PERSON",
                   "LOC", "PRODUCT",                                                                                      
                   "EVENT", "WORK_OF_ART",                                                                                
                   "LAW", "LANGUAGE",                                                                                     
-                  "PARTIES",'CUSTOM')                                                                                             
+                  "PARTIES", "CUSTOM", "DICT", "PATTERN")                                                                                             
 
 dir.create(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix))
 for(m in 1:length(projects)){                                                                                            

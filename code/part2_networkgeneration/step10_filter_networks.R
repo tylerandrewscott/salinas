@@ -6,7 +6,7 @@ network_graphs <- readRDS(paste0("salinasbox/intermediate_data/network_graphs_al
 # want to filter for certain entity types, remove isolates, and clean up some nodes
 filtered_networks <- lapply(network_graphs, function(network) {
   # only keep entity types we want
-  keep_entities <- c("PERSON", "ORG", "GPE", "PARTIES", "CUSTOM")
+  keep_entities <- c("PERSON", "ORG", "GPE", "PARTIES", "CUSTOM", "DICT", "PATTERN")
   filtered <- induced_subgraph(network, V(network)[vertex_attr(network,"entity_type") %in% keep_entities])
   # remove isolates
   isolates <- which(igraph::degree(filtered) == 0)
