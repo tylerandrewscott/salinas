@@ -14,7 +14,8 @@ tribe_names <- tribal_leaders %>%
   rename(tribe_full_name = `Tribe Full Name`, tribe = Tribe, tribe_alt_names = `Tribe Alternate Name`) %>%
   select(tribe_full_name, tribe, tribe_alt_names)
 
-full_tribes <- left_join(native_areas, tribe_names)
+full_tribes <- full_join(native_areas, tribe_names) %>%
+  unique()
 
 write.csv(full_tribes, "salinasbox/dictionary_data/tribes.csv")
 
