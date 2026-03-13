@@ -2,7 +2,7 @@
 Extract organization names from "List of Preparers" and consulting/cooperating
 party sections across all EIS documents.
 
-Input:  salinasbox/intermediate_data/pdf_to_text_raw_withapp/*.txt
+Input:  salinasbox/intermediate_data/pdf_to_text_raw/*.txt
 Output: salinasbox/intermediate_data/dictionaries/preparers_consultees.json
 
 Each input file is a TSV with columns: page, text
@@ -21,7 +21,7 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 SALINASBOX = Path.home() / "Library/CloudStorage/Box-Box/salinasbox"
-INPUT_DIR = SALINASBOX / "intermediate_data/pdf_to_text_raw_withapp"
+INPUT_DIR = SALINASBOX / "intermediate_data/pdf_to_text_raw"
 OUTPUT_PATH = SALINASBOX / "intermediate_data/dictionaries/preparers_consultees.json"
 CACHE_DIR = SALINASBOX / "intermediate_data/dictionaries/preparers_consultees_cache"
 

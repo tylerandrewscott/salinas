@@ -30,7 +30,7 @@ library(stringr)
 library(textNet)
 library(data.table)
 library(tidyverse)
-myextractfiles <- list.files(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix), full.names=T,pattern = 'V2')
+myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
@@ -49,10 +49,10 @@ myextracts <- clean(myextracts)
 groupids <- read.csv("salinasbox/clean_data/groupIDs.csv")
 
 #the helper code below generates the file called myacronyms,
-if(!file.exists(paste0("salinasbox/intermediate_data/project_specific_acronyms", app_suffix, ".RDS"))){
+if(!file.exists("salinasbox/intermediate_data/project_specific_acronyms.RDS")){
   source("code/part2_networkgeneration/helpers/generateacronyms.R")
 }
-myacronyms <- readRDS(paste0("salinasbox/intermediate_data/project_specific_acronyms", app_suffix, ".RDS"))
+myacronyms <- readRDS("salinasbox/intermediate_data/project_specific_acronyms.RDS")
 
 #this file generates RDS files that contain the agency dictionary we will use
 #to 1) further disambiguate nodes and 2) tag them with their AgencyScope
@@ -120,8 +120,8 @@ for(i in 1:length(myacronyms)){
 #turn on the toggle and run
 
 # ensure output directories exist
-for (d in c(paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix),
-            paste0("salinasbox/clean_data/example_only_cleaned_networks", app_suffix))) {
+for (d in c("salinasbox/clean_data/minimalist_cleaned_networks",
+            "salinasbox/clean_data/example_only_cleaned_networks")) {
   if (!dir.exists(d)) dir.create(d)
 }
 
@@ -132,7 +132,7 @@ if(manual_disambig == T){
   }
   
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
+    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
@@ -158,7 +158,7 @@ if(manual_disambig == T){
   }
 }else{
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
+    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
@@ -186,7 +186,7 @@ if(manual_disambig == T){
 #The result is that this top_entities file is in lowercase, but any rows added
 #to manual_disambiguation_key ought to be in title case, as shown in the examples
 source("code/part2_networkgeneration/helpers/get_top_nodes.R")
-top_entities <- read.csv(paste0("salinasbox/clean_data/top_entities", app_suffix, ".csv"))
+top_entities <- read.csv("salinasbox/clean_data/top_entities.csv")
 
 #fine print about disambiguate()
 #the disambiguate function has several built-in cleaning functions. 

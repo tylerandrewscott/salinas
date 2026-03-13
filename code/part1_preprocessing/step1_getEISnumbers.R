@@ -21,6 +21,17 @@ recorddeets <- read_parquet("../eis_documents/enepa_repository/metadata/eis_reco
 solarwinddeets <- recorddeets[str_detect(recorddeets$title,
                                          "(S|s)olar(?!\\sSystem|\\sTelescope)|(W|w)ind\\s(?!(R|r)iver|(C|c)ave|(D|d)amage|(T|t)unnel)|(W|w)ind$"),]
 
+# Exclude programmatic, withdrawn, and adopted EIS records
+solarwinddeets <- solarwinddeets[!str_detect(solarwinddeets$title,
+                                             regex("(WITHDRAWN|PROGRAMMATIC|ADOPT)", ignore_case = TRUE)), ]
+
+# Exclude transmission-line-only projects (infrastructure, not generation)
+exclude_ceqnums <- c(
+  20100471,  # Eldorado-Ivanpah Transmission Line
+  20110351   # North Steens 230-kV Transmission Line
+)
+solarwinddeets <- solarwinddeets[!solarwinddeets$ceqNumber %in% exclude_ceqnums, ]
+
 saveRDS(solarwinddeets, "salinasbox/solarwind_project_details_V2.RDS")
 #solarwinddeets <- readRDS("salinasbox/solarwind_project_details.RDS")
 writeLines(as.character(solarwinddeets$ceqNumber), "salinasbox/intermediate_data/solarwind_EISnumbers_V2.txt")
