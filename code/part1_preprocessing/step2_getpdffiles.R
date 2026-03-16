@@ -5,6 +5,12 @@
 
 #Required setup: symbolic links to enepa Box ("../eis_documents") and salinas Box ("salinasbox")
 
+#set-up: decide whether clobber is true or false,
+#depending on whether you want to force overwrite files already in dest_dir
+CLOBBER <- FALSE  # Set this to TRUE if you want to overwrite existing pdf files
+source("code/config.R")
+if (OVERWRITE_ALL) CLOBBER <- TRUE
+
 library(arrow)
 library(data.table)
 library(stringr)
@@ -69,8 +75,10 @@ if (length(to_remove) > 0) {
 failedfiles <- character(0)
 for (rel in matched_paths) {
   src <- file.path(pdf_directory, rel)
+  dest_file <- file.path(dest_dir, basename(src))
+  if (file.exists(dest_file) && !CLOBBER) next
   if (file.exists(src)) {
-    file.copy(from = src, to = file.path(dest_dir, basename(src)), overwrite = TRUE)
+    file.copy(from = src, to = dest_file, overwrite = TRUE)
   } else {
     failedfiles <- c(failedfiles, rel)
     message("File not found in enepa repository: ", rel)
@@ -80,5 +88,7 @@ saveRDS(failedfiles, "salinasbox/intermediate_data/failedfiles.RDS")
 
 # Supplemental PDFs
 for (src in supp_files) {
-  file.copy(from = src, to = file.path(dest_dir, basename(src)), overwrite = TRUE)
+  dest_file <- file.path(dest_dir, basename(src))
+  if (file.exists(dest_file) && !CLOBBER) next
+  file.copy(from = src, to = dest_file, overwrite = TRUE)
 }
