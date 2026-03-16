@@ -6,7 +6,7 @@ library(data.table)
 library(tidyverse)
 projects_all <- data.table(readRDS("salinasbox/solarwind_project_details_V2.RDS"))
 
-pdf_input_dir <- "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+pdf_input_dir <- "salinasbox/intermediate_data/pdfs_raw"
 
 eis_pdfs <- list.files(pdf_input_dir)
 eis_pdfs_nums <- unique(substr(eis_pdfs, 1, 8))

@@ -1,4 +1,4 @@
-#Purpose: Syncs pdfs_before_appendix_removal with the two PDF sources:
+#Purpose: Syncs pdfs_raw with the two PDF sources:
 # 1. enepa_repository (primary, filtered via metadata whitelist)
 # 2. supplemental_eis_documents (fallback for ceqNumbers with no enepa coverage)
 # Removes any files in the destination not traceable to either source.
@@ -15,7 +15,7 @@ library(arrow)
 library(data.table)
 library(stringr)
 
-dest_dir      <- "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+dest_dir      <- "salinasbox/intermediate_data/pdfs_raw"
 pdf_directory <- "../eis_documents/enepa_repository/box_files/documents"
 supp_dir      <- "salinasbox/supplemental_eis_documents/pdfs"
 

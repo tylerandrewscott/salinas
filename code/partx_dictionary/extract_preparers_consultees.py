@@ -53,11 +53,11 @@ ANY_TARGET_RE = re.compile(
 # Prompt
 # ---------------------------------------------------------------------------
 PROMPT_TEMPLATE = """This text is from an Environmental Impact Statement (EIS). \
-It contains one or more sections listing organizations involved in preparing or \
+It might contain one or more sections listing organizations involved in preparing or \
 reviewing this document (e.g. List of Preparers, Cooperating Agencies, \
 Consulting Parties, or MOA signatories).
 
-Extract every ORGANIZATION name. Do not include individual person names, \
+If yes, extract every ORGANIZATION name. Do not include individual person names, \
 job titles, degrees, or place names. For each organization, infer its category.
 
 Return a JSON array — no explanation, no markdown, just the array:
@@ -80,6 +80,7 @@ Text:
 def read_pages(filepath: Path) -> list[tuple[str, str]]:
     """Return list of (page_num_str, text) from a TSV file."""
     pages = []
+    csv.field_size_limit(10_000_000)
     with open(filepath, encoding="utf-8", errors="replace") as f:
         reader = csv.reader(f, delimiter="\t")
         next(reader, None)  # skip header

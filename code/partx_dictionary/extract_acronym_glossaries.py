@@ -59,9 +59,9 @@ ANY_TARGET_RE = re.compile(
 # Prompt
 # ---------------------------------------------------------------------------
 PROMPT_TEMPLATE = """This text is from an Environmental Impact Statement (EIS). \
-It contains an acronyms, abbreviations, or glossary section.
+It might contain an acronyms, abbreviations, or glossary section.
 
-Extract every acronym/abbreviation and its full expansion, OR every glossary \
+If yes, extract every acronym/abbreviation and its full expansion, OR every glossary \
 term and its definition. Include entries where the "acronym" is a word \
 (e.g. "Applicant" -> "Desert Stateline LLC").
 
@@ -84,6 +84,7 @@ Text:
 # ---------------------------------------------------------------------------
 
 def read_pages(filepath: Path) -> list[tuple[str, str]]:
+    csv.field_size_limit(10_000_000)
     pages = []
     with open(filepath, encoding="utf-8", errors="replace") as f:
         reader = csv.reader(f, delimiter="\t")

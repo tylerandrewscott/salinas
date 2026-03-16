@@ -18,7 +18,7 @@ for (pkg in packages) {
   library(pkg, character.only = TRUE)
 }
 
-pdf_directory <- "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+pdf_directory <- "salinasbox/intermediate_data/pdfs_raw"
 raw_text_directory <- "salinasbox/intermediate_data/pdf_to_text_raw"
 clean_text_directory <- "salinasbox/clean_data/pdf_to_text_clean"
 

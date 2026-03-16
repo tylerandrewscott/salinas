@@ -18,7 +18,7 @@ for (pkg in packages) {
   library(pkg, character.only = TRUE)
 }
 # PATH TO PDF FILES
-pdf_file_directory <- "salinasbox/intermediate_data/pdfs_before_appendix_removal"
+pdf_file_directory <- "salinasbox/intermediate_data/pdfs_raw"
 
 # We make a _raw_ conversion directory
 # Next script then does filtering to a cleaned directory
