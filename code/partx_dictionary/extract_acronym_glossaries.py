@@ -90,9 +90,10 @@ MAX_SECTION_PAGES = 30
 # Output tokens scaled by section size.
 # Acronym sections: ~500 tokens/page (15-20 short entries × ~25-30 tokens each).
 # Glossary sections: ~100 tokens/page (terms only, ~5-10 terms × ~10 tokens each).
+# Floor raised to 4096 to handle dense single-page sections without truncation.
 def _max_tokens_for_pages(n_pages: int, section_type: str) -> int:
     tokens_per_page = 100 if section_type == "glossary" else 500
-    return max(1024, min(n_pages * tokens_per_page, 16384))
+    return max(4096, min(n_pages * tokens_per_page, 16384))
 
 # ---------------------------------------------------------------------------
 # Prompts
@@ -192,6 +193,11 @@ def label_section(page_texts: list[str]) -> str:
     return "unknown"
 
 
+def _salvage_partial_json(raw: str) -> list[dict]:
+    """Extract all complete JSON objects from a truncated array response."""
+    return [m.group() for m in re.finditer(r'\{[^{}]+\}', raw, re.DOTALL)]
+
+
 def call_claude(client: anthropic.Anthropic, text: str, section_type: str, n_pages: int) -> list[dict]:
     prompt = ACRONYM_PROMPT if section_type != "glossary" else GLOSSARY_PROMPT
     response = client.messages.create(
@@ -202,15 +208,32 @@ def call_claude(client: anthropic.Anthropic, text: str, section_type: str, n_pag
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```[a-z]*\n?", "", raw)
     raw = re.sub(r"\n?```$", "", raw)
+
+    # Try clean parse first
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        match = re.search(r"\[.*\]", raw, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
+        pass
+
+    # Try finding a complete [...] block
+    match = re.search(r"\[.*\]", raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+
+    # Response was likely truncated — salvage all complete {...} objects
+    salvaged = []
+    for obj_str in _salvage_partial_json(raw):
+        try:
+            salvaged.append(json.loads(obj_str))
+        except json.JSONDecodeError:
+            pass
+    if salvaged:
+        print(f"  WARNING: truncated response, salvaged {len(salvaged)} entries", file=sys.stderr)
+        return salvaged
+
     print(f"  WARNING: could not parse Claude response: {raw[:200]}", file=sys.stderr)
     return []
 
