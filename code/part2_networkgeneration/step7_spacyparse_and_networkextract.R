@@ -3,7 +3,7 @@
 # 
 # 
 
-overwrite <- F
+overwrite <- T
 test <- F
 
 source("code/config.R")
@@ -62,9 +62,11 @@ parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(f
 # ---------------------------------------------------------------------------
 library(jsonlite)
 
+salinasbox <- file.path('salinasbox')
+
 # 1. Acronym/abbreviation dictionary (filtered)
 acronym_raw <- jsonlite::fromJSON(
-  "salinasbox/intermediate_data/dictionaries/acronym_dictionary_filtered.json",
+  file.path(salinasbox, "intermediate_data/dictionaries/acronym_dictionary_filtered.json"),
   simplifyVector = FALSE
 )
 
@@ -94,13 +96,13 @@ names(ambiguous_dict) <- sapply(acronym_ambiguous, function(x) x$term)
 
 # 2. Preparers/consultees (all universal — each name is an org, no ambiguity)
 preparers_raw <- jsonlite::fromJSON(
-  "salinasbox/intermediate_data/dictionaries/preparers_consultees.json"
+  file.path(salinasbox, "intermediate_data/dictionaries/preparers_consultees.json")
 )
 preparers_names <- preparers_raw$name
 
 # 3. Glossary terms — 2+ word n-grams only (for named entity recognition)
 glossary_raw <- jsonlite::fromJSON(
-  "salinasbox/intermediate_data/dictionaries/glossary_dictionary.json"
+  file.path(salinasbox, "intermediate_data/dictionaries/glossary_dictionary.json")
 )
 glossary_names <- glossary_raw$term[stringr::str_count(glossary_raw$term, "\\s+") >= 1]
 
@@ -109,7 +111,7 @@ glossary_names <- glossary_raw$term[stringr::str_count(glossary_raw$term, "\\s+"
 # ---------------------------------------------------------------------------
 universal_names <- unique(c(acronym_universal_names, acronym_ambiguous_names, preparers_names, glossary_names))
 universal_names <- universal_names[!grepl(":", universal_names)]
-universal_names <- universal_names[!sapply(universal_names, PeriodicTable::isSymb)]
+universal_names <- universal_names[!sapply(universal_names, PeriodicTable::isSymb, USE.NAMES = FALSE)]
 
 dict_ents <- entity_specify(universal_names, case_sensitive = T,
                             whole_word_only = T, entity_label = "DICT")
