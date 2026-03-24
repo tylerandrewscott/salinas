@@ -21,7 +21,7 @@
 #edgelist and has various quality control measures.
 
 manual_disambig = F
-overwrite = F
+overwrite = T
 
 source("code/config.R")
 if (OVERWRITE_ALL) overwrite <- TRUE
@@ -30,7 +30,7 @@ library(stringr)
 library(textNet)
 library(data.table)
 library(tidyverse)
-myextractfiles <- list.files(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix), full.names=T,pattern = 'V2')
+myextractfiles <- list.files("salinasbox/intermediate_data/raw_extracted_networks", full.names=T,pattern = 'V2')
 myextracts <- vector(mode = "list", length = length(myextractfiles))
 myextracts <- lapply(myextractfiles, 
                      function(i) readRDS(i))
@@ -49,10 +49,10 @@ myextracts <- clean(myextracts)
 groupids <- read.csv("salinasbox/clean_data/groupIDs.csv")
 
 #the helper code below generates the file called myacronyms,
-if(!file.exists(paste0("salinasbox/intermediate_data/project_specific_acronyms", app_suffix, ".RDS"))){
+if(overwrite || !file.exists("salinasbox/intermediate_data/project_specific_acronyms.RDS")){
   source("code/part2_networkgeneration/helpers/generateacronyms.R")
 }
-myacronyms <- readRDS(paste0("salinasbox/intermediate_data/project_specific_acronyms", app_suffix, ".RDS"))
+myacronyms <- readRDS("salinasbox/intermediate_data/project_specific_acronyms.RDS")
 
 #this file generates RDS files that contain the agency dictionary we will use
 #to 1) further disambiguate nodes and 2) tag them with their AgencyScope
@@ -68,6 +68,7 @@ for_entity_dictionary <- readRDS("salinasbox/intermediate_data/agencylist_for_en
 #we also make a custom version of for_entity_dictionary subset by state
 #called entitydict
 entitydict <- vector(mode = "list", length = length(myacronyms))
+names(entitydict) <- names(myacronyms)
 
 #now we combine the myacronyms (which are project-specific)
 #with the list of known federal and state agencies
@@ -79,7 +80,7 @@ for(i in 1:length(myacronyms)){
   )))
   myacronyms[[i]] <- data.table::rbindlist(list(myacronyms[[i]], for_disambig),
                                            use.names = T)
-  stateabbr <- groupids$State[groupids$EIS.Number == names(myacronyms)[i]]
+  stateabbr <- groupids$primaryState[groupids$ceqNumber == names(myacronyms)[i]]
   statename <- state.name[state.abb == stateabbr]
   #filter for only local state, federal, and plan-specific acronyms
   #we aren't including out-of-state here in myacronyms because the point of disambiguating is 
@@ -120,8 +121,8 @@ for(i in 1:length(myacronyms)){
 #turn on the toggle and run
 
 # ensure output directories exist
-for (d in c(paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix),
-            paste0("salinasbox/clean_data/example_only_cleaned_networks", app_suffix))) {
+for (d in c("salinasbox/clean_data/minimalist_cleaned_networks",
+            "salinasbox/clean_data/example_only_cleaned_networks")) {
   if (!dir.exists(d)) dir.create(d)
 }
 
@@ -132,24 +133,25 @@ if(manual_disambig == T){
   }
   
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
+    eis_i <- str_extract(names(myextracts)[i], "[0-9]{8}")
+    outfile <- paste0("salinasbox/clean_data/example_only_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
     }
-    currentgroupname <- groupids$Group.Name[which(groupids$EIS.Number == names(myextracts)[i])]
+    currentgroupname <- groupids$Group.Name[which(groupids$ceqNumber == eis_i)]
     #we want to filter for only rows that are relevant for this project group
     current_manuals <- manual[str_squish(manual$Group.Name) ==
                                 currentgroupname,]
     #now we combine the acronyms with the manual definitions to make
     #the to and from list that we put into the disambiguator
     if(length(current_manuals$from) > 0){
-      from <- append(as.list(myacronyms[[i]]$from), as.list(current_manuals$from))
-      to <- append(as.list(myacronyms[[i]]$to), stringr::str_split(current_manuals$to, "\\s*,\\s*"))
+      from <- append(as.list(myacronyms[[eis_i]]$from), as.list(current_manuals$from))
+      to <- append(as.list(myacronyms[[eis_i]]$to), stringr::str_split(current_manuals$to, "\\s*,\\s*"))
 
     }else{
-      from <- as.list(myacronyms[[i]]$from)
-      to <- as.list(myacronyms[[i]]$to)
+      from <- as.list(myacronyms[[eis_i]]$from)
+      to <- as.list(myacronyms[[eis_i]]$to)
     }
     print(i)
     source("code/part2_networkgeneration/helpers/disambig_helper.R")
@@ -158,7 +160,8 @@ if(manual_disambig == T){
   }
 }else{
   for(i in seq_along(myextracts)){
-    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix, "/cleanedextract_", names(myextracts)[i], ".RDS")
+    eis_i <- str_extract(names(myextracts)[i], "[0-9]{8}")
+    outfile <- paste0("salinasbox/clean_data/minimalist_cleaned_networks/cleanedextract_", names(myextracts)[i], ".RDS")
     if(!overwrite && file.exists(outfile)){
       message("Skipping ", names(myextracts)[i], " - ", outfile, " already exists")
       next
@@ -167,8 +170,8 @@ if(manual_disambig == T){
     #and agency names from the list of known agencies
     #to make the to and from list
     #that we put into the disambiguator
-    from <- as.list(myacronyms[[i]]$from)
-    to <- as.list(myacronyms[[i]]$to)
+    from <- as.list(myacronyms[[eis_i]]$from)
+    to <- as.list(myacronyms[[eis_i]]$to)
     print(i)
     source("code/part2_networkgeneration/helpers/disambig_helper.R")
 
@@ -186,7 +189,7 @@ if(manual_disambig == T){
 #The result is that this top_entities file is in lowercase, but any rows added
 #to manual_disambiguation_key ought to be in title case, as shown in the examples
 source("code/part2_networkgeneration/helpers/get_top_nodes.R")
-top_entities <- read.csv(paste0("salinasbox/clean_data/top_entities", app_suffix, ".csv"))
+top_entities <- read.csv("salinasbox/clean_data/top_entities.csv")
 
 #fine print about disambiguate()
 #the disambiguate function has several built-in cleaning functions. 

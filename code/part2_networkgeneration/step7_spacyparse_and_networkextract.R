@@ -3,7 +3,7 @@
 # 
 # 
 
-overwrite <- F
+overwrite <- T
 test <- F
 
 source("code/config.R")
@@ -25,7 +25,7 @@ ret_path <- grep('spacy-env',reticulate::conda_list()$python,value = T)
 # Setup: requires textNet, spaCy, python                                                                                 
 # if you want to overwrite file outputs, set overwrite to T                                                              
 
-files <- list.files(path = paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix),
+files <- list.files(path = "salinasbox/clean_data/pdf_to_text_clean",
                     pattern = ".RDS", full.names = T)                                                                    
 
 texts <- lapply(files, function(i){
@@ -55,15 +55,69 @@ parties <- c("Project", "Projects",
              "Tribe", "Tribes",
              "we", "We")
 
-parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files", app_suffix, "/", basename(files))                                   
+parse_fileloc <- paste0("salinasbox/intermediate_data/parsed_files/", basename(files))                                   
 
-ets <- read.csv('salinasbox/dictionary_data/final_acronym_dictionary.csv', header = T)         
+# ---------------------------------------------------------------------------
+# Load dictionaries
+# ---------------------------------------------------------------------------
+library(jsonlite)
 
-ets <- ets[!grepl('\\:', ets$name), ] 
-ets <- ets[!sapply(ets$acronym,PeriodicTable::isSymb),]
-ets$clean <- stringr::str_replace_all(ets$name,'_',' ')
+salinasbox <- file.path('salinasbox')
 
-dict_ents <- entity_specify(unique(ets$clean), case_sensitive = T, whole_word_only = T)                                     
+# 1. Acronym/abbreviation dictionary (filtered)
+acronym_raw <- jsonlite::fromJSON(
+  file.path(salinasbox, "intermediate_data/dictionaries/acronym_dictionary_filtered.json"),
+  simplifyVector = FALSE
+)
+
+# Universal: exactly one expansion across all docs
+# Ambiguous: multiple expansions (e.g. "Applicant" = different entity per project)
+acronym_universal <- Filter(function(x) x$n_expansions == 1, acronym_raw)
+acronym_ambiguous <- Filter(function(x) x$n_expansions > 1, acronym_raw)
+
+# All expansion names for the entity ruler (universal + ambiguous)
+acronym_universal_names <- sapply(acronym_universal, function(x) x$expansions[[1]]$expansion)
+acronym_ambiguous_names <- unlist(lapply(acronym_ambiguous, function(x)
+  sapply(x$expansions, function(e) e$expansion)
+))
+
+# Ambiguous dict saved for post-hoc disambiguation — not used by entity ruler
+ambiguous_dict <- lapply(acronym_ambiguous, function(x) {
+  list(
+    term       = x$term,
+    expansions = lapply(x$expansions, function(e) list(
+      expansion   = e$expansion,
+      ceq_numbers = unique(sub("_.*", "", e$sources)),
+      sources     = e$sources
+    ))
+  )
+})
+names(ambiguous_dict) <- sapply(acronym_ambiguous, function(x) x$term)
+
+# 2. Preparers/consultees (all universal — each name is an org, no ambiguity)
+preparers_raw <- jsonlite::fromJSON(
+  file.path(salinasbox, "intermediate_data/dictionaries/preparers_consultees.json")
+)
+preparers_names <- preparers_raw$name
+
+# 3. Glossary terms — 2+ word n-grams only (for named entity recognition)
+glossary_raw <- jsonlite::fromJSON(
+  file.path(salinasbox, "intermediate_data/dictionaries/glossary_dictionary.json")
+)
+glossary_names <- glossary_raw$term[stringr::str_count(glossary_raw$term, "\\s+") >= 1]
+
+# ---------------------------------------------------------------------------
+# Build universal dictionary
+# ---------------------------------------------------------------------------
+universal_names <- unique(c(acronym_universal_names, acronym_ambiguous_names, preparers_names, glossary_names))
+universal_names <- universal_names[!grepl(":", universal_names)]
+universal_names <- universal_names[!sapply(universal_names, PeriodicTable::isSymb, USE.NAMES = FALSE)]
+
+dict_ents <- entity_specify(universal_names, case_sensitive = T,
+                            whole_word_only = T, entity_label = "DICT")
+
+# append structural patterns (label = "PATTERN")
+dict_ents <- c(dict_ents, textNet::build_structural_org_patterns())                                     
 
 # === RUN PARSING ===                                                                                                    
 parsed <- textNet::parse_text_trf(ret_path,                                                                                  
@@ -78,7 +132,7 @@ parsed <- textNet::parse_text_trf(ret_path,
 
 # === GROUP BY EIS NUMBER ===
 # Load all parsed docs from parquet (saved by parse_text_trf)
-parsed_files <- list.files(paste0("salinasbox/intermediate_data/parsed_files", app_suffix), pattern = "\\.parquet$", full.names = TRUE)
+parsed_files <- list.files("salinasbox/intermediate_data/parsed_files", pattern = "\\.parquet$", full.names = TRUE)
 parsed <- lapply(parsed_files, textNet::read_parsed_trf)
 names(parsed) <- basename(parsed_files)
 
@@ -105,11 +159,11 @@ keptentities <- c("PERSON",
                   "LOC", "PRODUCT",                                                                                      
                   "EVENT", "WORK_OF_ART",                                                                                
                   "LAW", "LANGUAGE",                                                                                     
-                  "PARTIES",'CUSTOM')                                                                                             
+                  "PARTIES", "CUSTOM", "DICT", "PATTERN")                                                                                             
 
-dir.create(paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix))
-for(m in 1:length(projects)){                                                                                            
-  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix, "/extract_", names(projects)[m], "_V2.RDS")     
+dir.create("salinasbox/intermediate_data/raw_extracted_networks")
+for(m in 1:length(projects)){
+  extract_file <- paste0("salinasbox/intermediate_data/raw_extracted_networks/extract_", names(projects)[m], "_V2.RDS")     
   if(overwrite == T | !file.exists(extract_file)){                                                                       
     extracts[[m]] <- textnet_extract(projects[[m]],                                                                      
                                      cl = 1,                                                                             
@@ -122,4 +176,4 @@ for(m in 1:length(projects)){
   }                                                                                                                      
 }                                                                                                                        
 
-saveRDS(object = extracts, file = paste0("salinasbox/intermediate_data/raw_extracts_V2", app_suffix, ".RDS"))
+saveRDS(object = extracts, file = "salinasbox/intermediate_data/raw_extracts_V2.RDS")

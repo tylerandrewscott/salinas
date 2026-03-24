@@ -25,9 +25,9 @@ for (pkg in packages) {
 
 source("code/part1_preprocessing/helpers/headfootremove.R")
 
-raw_txt_file_location <- paste0("salinasbox/intermediate_data/pdf_to_text_raw", app_suffix)
+raw_txt_file_location <- "salinasbox/intermediate_data/pdf_to_text_raw"
 
-cleaned_txt_file_location <- paste0("salinasbox/clean_data/pdf_to_text_clean", app_suffix)
+cleaned_txt_file_location <- "salinasbox/clean_data/pdf_to_text_clean"
 if (!dir.exists(cleaned_txt_file_location)) {
   dir.create(cleaned_txt_file_location)
 }
@@ -112,18 +112,12 @@ for (x in seq_along(raw_files)) {
     dataintermed[[x]]$text <- data[[x]]$text
     data[[x]]$text <- headfootremove(data[[x]]$text)
     
-    #removal of certain pages as described in salinasbox/intermediate_data/appendix_removal/!README.docx
-    #remove page 214 onward of the 20140004_Fowler_Ridge_Wind_Farm_Final_EIS_010714
-    #since it is appendices (only when using appendix-removed PDFs)
-    if(!INCLUDE_APPENDICES && basename(raw_files[x]) == "20140004_Fowler_Ridge_Wind_Farm_Final_EIS_010714.txt"){
-      data[[x]] <- data[[x]][1:213,]
-    }
     #keep in RDS rather than txt for encoding ease
     #this is important because we want to compare the header/footer removal to make sure it works acceptably
     saveRDS(object = data[[x]], file = cleaned_file)
   }
 }
-saveRDS(object = data, file = paste0("salinasbox/clean_data/all_clean_texts_pregrouping", app_suffix, ".RDS"))
+saveRDS(object = data, file = "salinasbox/clean_data/all_clean_texts_pregrouping.RDS")
 
 #the rest of this script consists of tests to verify
 #quality of the header/footer removal

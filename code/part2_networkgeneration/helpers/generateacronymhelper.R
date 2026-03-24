@@ -50,5 +50,5 @@ for(i in 1:length(acrontable)){
                                              "\\W", "_")
 }
 names(acrontable) <- names(mytexts)
-saveRDS(acrontable, paste0("salinasbox/intermediate_data/partial_acronym_list_from_table_only", app_suffix, ".RDS"))
+saveRDS(acrontable, "salinasbox/intermediate_data/partial_acronym_list_from_table_only.RDS")
 

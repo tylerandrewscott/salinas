@@ -21,9 +21,9 @@ networktype = "minimalist"
 multiplex = F
 
 filepath <- dplyr::case_when(
-  networktype == "raw" ~ paste0("salinasbox/intermediate_data/raw_extracted_networks", app_suffix, "/"),
-  networktype == "minimalist" ~ paste0("salinasbox/clean_data/minimalist_cleaned_networks", app_suffix, "/"),
-  networktype == "manual" ~ paste0("salinasbox/clean_data/manually_cleaned_networks", app_suffix, "/"),
+  networktype == "raw" ~ "salinasbox/intermediate_data/raw_extracted_networks/",
+  networktype == "minimalist" ~ "salinasbox/clean_data/minimalist_cleaned_networks/",
+  networktype == "manual" ~ "salinasbox/clean_data/manually_cleaned_networks/",
   T ~ NA
 )
 
@@ -39,7 +39,7 @@ network_graphs <- lapply(myextracts, function(i)
 # match EIS numbers to network graphs
 extracts_names <- paste0("EIS_", (str_extract(basename(myextractfiles),'[0-9]{8}')))
 names(network_graphs) <- extracts_names
-saveRDS(network_graphs, paste0("salinasbox/intermediate_data/network_graphs_all_entities_V2", app_suffix, ".RDS"))
+saveRDS(network_graphs, "salinasbox/intermediate_data/network_graphs_all_entities_V2.RDS")
 
 #here's the plot of the first EIS as an example
 #on a weighted network without isolates

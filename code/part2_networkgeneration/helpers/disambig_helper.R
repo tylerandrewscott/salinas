@@ -13,6 +13,9 @@ if(length(indicestoremove)>0){
   to <- to[-indicestoremove]
 }
 
+#escape regex metacharacters in from values so they are treated as
+#literal strings by disambiguate(), which uses them as regex patterns
+from <- lapply(from, function(x) gsub("([.+*?\\[\\]^$(){}\\\\|])", "\\\\\\1", x, perl = TRUE))
 
 cleaned_extract <- disambiguate(textnet_extract = myextracts[[i]],
                                 from = from,
@@ -20,12 +23,12 @@ cleaned_extract <- disambiguate(textnet_extract = myextracts[[i]],
 #add AgencyScope
 cleaned_extract$nodelist$AgencyScope <- 
   unlist(lapply(1:nrow(cleaned_extract$nodelist), function(j) {
-    state <- myacronyms[[i]]$State[tolower(myacronyms[[i]]$to) == cleaned_extract$nodelist$entity_name[j]]
+    state <- myacronyms[[eis_i]]$State[tolower(myacronyms[[eis_i]]$to) == cleaned_extract$nodelist$entity_name[j]]
     state <- ifelse(length(state)==0, NA, state)}))
 
 #don't overwrite AgencyScope from myacronyms but add on to it using entity dictionary
 statesvect <- unlist(lapply(1:nrow(cleaned_extract$nodelist), function(j) {
-  state <- entitydict[[i]]$State[entitydict[[i]]$Name == cleaned_extract$nodelist$entity_name[j]]
+  state <- entitydict[[eis_i]]$State[entitydict[[eis_i]]$Name == cleaned_extract$nodelist$entity_name[j]]
   state <- ifelse(length(state)==0, NA, state)}))
 cleaned_extract$nodelist$AgencyScope <- dplyr::case_when(
   is.na(cleaned_extract$nodelist$AgencyScope) ~ statesvect,
